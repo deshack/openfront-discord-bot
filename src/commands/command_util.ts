@@ -1,11 +1,6 @@
-import { Interaction, SlashCommandBuilder } from "discord.js";
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
-
-export interface Command {
-  data: SlashCommandBuilder;
-  execute: (interaction: Interaction) => Promise<void>;
-}
+import { Command } from "./commands";
 
 /**
  * Loads all commands and returns them
@@ -23,10 +18,17 @@ export async function discover_commands(): Promise<Command[]> {
       .filter((dirent) => dirent.isFile() && dirent.name.endsWith(".js"))
       .map((dirent) => dirent.name);
     for (const commandFile of commandFiles) {
-      const command: Command = (
-        await import(join(commandsRootDir, commandDir, commandFile))
-      ).default;
-      if (!("data" in command && "execute" in command)) continue;
+      const filePath = join(commandsRootDir, commandDir, commandFile);
+      const importedFile = await import(filePath);
+      if (importedFile === undefined) {
+        console.warn(`Failed to import ${filePath}`);
+        continue;
+      }
+      const command: Command = importedFile.command;
+      if (command === undefined) {
+        console.warn(`${filePath} does not export 'command'`);
+        continue;
+      }
       commands.push(command);
     }
   }

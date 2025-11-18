@@ -4,7 +4,7 @@ import { discover_commands } from "../commands/command_util";
 
 async function deploy_commands() {
   const commands = (await discover_commands()).map((command) =>
-    command.data.toJSON(),
+    command.toJSON(),
   );
 
   const rest = new REST().setToken(config.token);

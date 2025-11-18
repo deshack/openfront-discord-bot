@@ -1,12 +1,9 @@
-import {
-  ChatInputCommandInteraction,
-  MessageFlags,
-  SlashCommandBuilder,
-} from "discord.js";
+import { MessageFlags, SlashCommandBuilder } from "discord.js";
+import { ChatInputCommand } from "../commands";
 
-export default {
+export const command = new ChatInputCommand({
   data: new SlashCommandBuilder().setName("ping").setDescription("Pong!"),
-  async execute(interaction: ChatInputCommandInteraction) {
-    interaction.reply({ content: "Pong!", flags: MessageFlags.Ephemeral });
+  async execute(ctx) {
+    ctx.reply({ content: "Pong!", flags: MessageFlags.Ephemeral });
   },
-};
+});
