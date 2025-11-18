@@ -33,3 +33,5 @@ coverage/
 # TypeScript
 *.tsbuildinfo
 
+# Config
+config.json
