@@ -27,7 +27,7 @@ export async function getPublicFFALeaderboardMessage(
     const user_str =
       entry.user === undefined
         ? undefined
-        : `**Discord**: <@${entry.user.id}> (\`@${entry.user.username}\`)`;
+        : `**Discord**: <@${entry.user.id}> (\`@${entry.user.username}\`)\n`;
     str +=
       `
                     **PublicId**: \`${entry.public_id}\`
