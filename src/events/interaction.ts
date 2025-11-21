@@ -46,18 +46,25 @@ const event: EventHandler = {
           await interaction.update(message as InteractionUpdateOptions);
         } catch (e) {
           console.warn(e);
+          interaction.reply({
+            content: "Error.",
+            flags: MessageFlags.Ephemeral,
+          });
         }
       } else if (interaction.customId.startsWith("clan-lb-view-page-")) {
         const pageNumber = parseInt(
           interaction.customId.substring("clan-lb-view-page-".length),
         );
-        console.log(pageNumber);
         const message = await getClanLeaderboardMessage(pageNumber);
         if (message === undefined) return;
         try {
           await interaction.update(message as InteractionUpdateOptions);
         } catch (e) {
           console.warn(e);
+          interaction.reply({
+            content: "Error.",
+            flags: MessageFlags.Ephemeral,
+          });
         }
       }
     }
