@@ -4,6 +4,7 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import { getClanStatsMessage } from "../../messages/clan_stats";
+import { getPlayerPublicMessage } from "../../messages/player_public";
 import { CommandHandler } from "../../structures/command";
 
 const command: CommandHandler = {
@@ -37,7 +38,17 @@ const command: CommandHandler = {
       throw new Error("Not a ChatInputCommand");
     const subCommand = interaction.options.getSubcommand(true);
     if (subCommand === "player") {
-      // TODO
+      const message = await getPlayerPublicMessage(
+        interaction.options.getString("id", true),
+      );
+      if (message === undefined) {
+        interaction.reply({
+          content: "Failed to fetch clan stats.",
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+      interaction.reply(message as InteractionReplyOptions);
     } else {
       const message = await getClanStatsMessage(
         interaction.options.getString("tag", true),
