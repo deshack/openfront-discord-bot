@@ -1,11 +1,18 @@
-import { ClanLeaderboardData, PublicFFALeaderboardEntry } from "./api_schemas";
+import { format } from "node:util";
+import {
+  ClanLeaderboardData,
+  ClanStats,
+  PublicFFALeaderboardEntry,
+} from "./api_schemas";
 
 const API_PUBLIC_FFA_LEADERBOARD_PATH =
   "https://api.openfront.io/leaderboard/public/ffa";
 const API_CLAN_LEADERBOARD_PATH =
   "https://api.openfront.io/public/clans/leaderboard";
+const API_CLAN_STATS_PATH = "https://api.openfront.io/public/clan/%s";
 const API_PUBLIC_FFA_LEADERBOARD_CACHE_UPDATE_TIME = 1000 * 60 * 10; // 10 minutes
 const API_CLAN_LEADERBOARD_CACHE_UPDATE_TIME = 1000 * 60 * 10;
+const API_CLAN_STATS_CACHE_UPDATE_TIME = 1000 * 60 * 10;
 
 const publicFFALeaderboardCache: {
   data: undefined | PublicFFALeaderboardEntry[];
@@ -22,6 +29,8 @@ const clanLeaderboardCache: {
   data: undefined,
   last_updated: 0,
 };
+
+const clanStatsCache: Record<string, [number, ClanStats]> = {};
 
 export async function getPublicFFALeaderboard(): Promise<
   PublicFFALeaderboardEntry[] | undefined
@@ -60,5 +69,22 @@ export async function getClanLeaderboard(): Promise<
   const json = (await res.json()) as ClanLeaderboardData;
   clanLeaderboardCache.data = json;
   clanLeaderboardCache.last_updated = Date.now();
+  return structuredClone(json);
+}
+
+export async function getClanStats(
+  clanTag: string,
+): Promise<ClanStats | undefined> {
+  const url = format(API_CLAN_STATS_PATH, clanTag);
+  if (
+    clanStatsCache[clanTag] !== undefined &&
+    clanStatsCache[clanTag][0] + API_CLAN_STATS_CACHE_UPDATE_TIME > Date.now()
+  ) {
+    return structuredClone(clanStatsCache[clanTag][1]);
+  }
+  const res = await fetch(url);
+  if (res.status !== 200) return undefined;
+  const json = (await res.json()).clan as ClanStats;
+  clanStatsCache[clanTag] = [Date.now(), json];
   return structuredClone(json);
 }

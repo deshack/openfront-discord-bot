@@ -27,3 +27,22 @@ export interface ClanLeaderboardData {
     weightedWLRatio: number;
   }[];
 }
+
+export interface ClanStats {
+  clanTag: string;
+  games: number;
+  playerSessions: number;
+  wins: number;
+  losses: number;
+  weightedWins: number;
+  weightedLosses: number;
+  weightedWLRatio: number;
+  teamTypeWL: Record<
+    string,
+    { wl: [number, number]; weightedWL: [number, number] }
+  >;
+  teamCountWL: Record<
+    number,
+    { wl: [number, number]; weightedWL: [number, number] }
+  >;
+}
