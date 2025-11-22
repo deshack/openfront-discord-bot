@@ -42,7 +42,6 @@ export async function getClanLeaderboardMessage(
                     `;
   });
   const backButton = new ButtonBuilder()
-    .setLabel("Previous page")
     .setEmoji("⬅️")
     .setStyle(ButtonStyle.Primary);
   if (page === 0) {
@@ -52,7 +51,6 @@ export async function getClanLeaderboardMessage(
     backButton.setCustomId("clan-lb-view-page-" + (page - 1));
   }
   const nextButton = new ButtonBuilder()
-    .setLabel("Next page")
     .setEmoji("➡️")
     .setStyle(ButtonStyle.Primary);
   if ((page + 1) * LEADERBOARD_PAGE_ENTRIES >= original_page_len) {
@@ -61,16 +59,28 @@ export async function getClanLeaderboardMessage(
   } else {
     nextButton.setCustomId("clan-lb-view-page-" + (page + 1));
   }
+
+  const pageButton = new ButtonBuilder()
+    .setLabel(
+      `${page + 1} / ${Math.ceil(original_page_len / LEADERBOARD_PAGE_ENTRIES)}`,
+    )
+    .setStyle(ButtonStyle.Secondary)
+    .setCustomId("x")
+    .setDisabled(true);
+
   return {
     embeds: [
       new EmbedBuilder()
         .setTitle("Clan Leaderboard")
         .setDescription(str)
         .setFooter({ text: "OpenFront" })
-        .setTimestamp(),
+        .setTimestamp()
+        .setColor("#ffffff"),
     ],
     components: [
-      new ActionRowBuilder().addComponents(backButton, nextButton).toJSON(),
+      new ActionRowBuilder()
+        .addComponents(backButton, pageButton, nextButton)
+        .toJSON(),
     ],
   };
 }
