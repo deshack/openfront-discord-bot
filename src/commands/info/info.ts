@@ -39,7 +39,7 @@ const command: CommandHandler = {
     const subCommand = interaction.options.getSubcommand(true);
     if (subCommand === "player") {
       const message = await getPlayerPublicMessage(
-        interaction.options.getString("id", true),
+        interaction.options.getString("id", true).trim(),
       );
       if (message === undefined) {
         interaction.reply({
@@ -51,7 +51,7 @@ const command: CommandHandler = {
       interaction.reply(message as InteractionReplyOptions);
     } else {
       const message = await getClanStatsMessage(
-        interaction.options.getString("tag", true),
+        interaction.options.getString("tag", true).trim(),
       );
       if (message === undefined) {
         interaction.reply({
