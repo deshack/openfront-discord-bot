@@ -1,3 +1,8 @@
+/**
+ * Replace the types of fields in T that are specified in R with the type of them in R
+ */
+type Replace<T, R> = Omit<T, keyof R> & R;
+
 export interface PublicFFALeaderboardEntry {
   wlr: number;
   wins: number;
@@ -76,16 +81,7 @@ export interface GameSchemaRaw {
   difficulty: GameDifficulty;
   clientId: string;
 }
-
-export interface GameSchema {
-  gameId: string;
-  start: Date;
-  mode: GameMode;
-  type: GameType;
-  map: MapName;
-  difficulty: GameDifficulty;
-  clientId: string;
-}
+type GameSchema = Replace<GameSchemaRaw, { start: Date }>;
 
 export interface DiscordUserSchema {
   id: string;
@@ -167,13 +163,10 @@ export interface PlayerPublicRaw {
   games: GameSchemaRaw[];
   stats: LayeredStatsRaw;
 }
-
-export interface PlayerPublic {
-  createdAt?: Date;
-  user?: DiscordUserSchema;
-  games: GameSchema[];
-  stats: LayeredStats;
-}
+export type PlayerPublic = Replace<
+  PlayerPublicRaw,
+  { createdAt?: Date; games: GameSchema[]; stats: LayeredStats }
+>;
 
 export function playerPublicRawToPlayerPublic(
   raw: PlayerPublicRaw,
