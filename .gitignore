@@ -35,3 +35,7 @@ coverage/
 
 # Config
 config.json
+
+# CloudFlare Workers
+.dev.vars
+.wrangler/

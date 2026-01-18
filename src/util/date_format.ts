@@ -1,8 +1,18 @@
-import { time, TimestampStylesString } from "discord.js";
+export type TimestampStyle = "t" | "T" | "d" | "D" | "f" | "F" | "R";
+
+export const TimestampStyles = {
+  ShortTime: "t",
+  LongTime: "T",
+  ShortDate: "d",
+  LongDate: "D",
+  ShortDateTime: "f",
+  LongDateTime: "F",
+  RelativeTime: "R",
+} as const;
 
 export function dateToDiscordTimestamp(
   date: Date,
-  style: TimestampStylesString,
+  style: TimestampStyle,
 ): string {
-  return time(date, style);
+  return `<t:${Math.floor(date.getTime() / 1000)}:${style}>`;
 }

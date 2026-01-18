@@ -3,7 +3,7 @@
     "target": "ES2020",
     "module": "ESNext",
     "rootDir": ".",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,
     "allowUnusedLabels": false,
@@ -15,7 +15,9 @@
     "useDefineForClassFields": false,
     "strictPropertyInitialization": false,
     "outDir": "dist",
-    "allowImportingTsExtensions": false
+    "allowImportingTsExtensions": false,
+    "skipLibCheck": true,
+    "types": ["@cloudflare/workers-types", "node", "jest"]
   },
   "include": [
     "src/**/*",

@@ -1,22 +1,37 @@
 import { REST, Routes } from "discord.js";
-import config from "../../config.json" with { type: "json" };
-import { discover_commands } from "../util/file_discovery";
+import { commands } from "../commands";
 
-async function deploy_commands() {
-  const commands = (await discover_commands()).map((command) =>
-    command.data.toJSON(),
-  );
+async function deployCommands() {
+  const token = process.env.DISCORD_TOKEN;
+  const clientId = process.env.DISCORD_CLIENT_ID;
 
-  const rest = new REST().setToken(config.token);
+  if (!token) {
+    console.error(
+      "DISCORD_TOKEN environment variable is required. Set it via:",
+    );
+    console.error("  export DISCORD_TOKEN=your_token_here");
+    process.exit(1);
+  }
+
+  if (!clientId) {
+    console.error(
+      "DISCORD_CLIENT_ID environment variable is required. Set it via:",
+    );
+    console.error("  export DISCORD_CLIENT_ID=your_client_id_here");
+    process.exit(1);
+  }
+
+  const commandData = Object.values(commands).map((command) => command.data);
+
+  const rest = new REST().setToken(token);
 
   try {
     console.log(
-      `Started refreshing ${commands.length} application (/) commands.`,
+      `Started refreshing ${commandData.length} application (/) commands.`,
     );
-    const data: unknown[] = (await rest.put(
-      Routes.applicationCommands(config.client_id),
-      { body: commands },
-    )) as unknown[];
+    const data = (await rest.put(Routes.applicationCommands(clientId), {
+      body: commandData,
+    })) as unknown[];
     console.log(
       `Successfully reloaded ${data.length} application (/) commands.`,
     );
@@ -25,4 +40,4 @@ async function deploy_commands() {
   }
 }
 
-await deploy_commands();
+await deployCommands();

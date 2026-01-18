@@ -1,15 +1,8 @@
-import {
-  InteractionEditReplyOptions,
-  InteractionReplyOptions,
-  InteractionUpdateOptions,
-  MessageEditOptions,
-  MessagePayload,
-} from "discord.js";
+import { APIActionRowComponent, APIButtonComponent, APIEmbed } from "discord-api-types/v10";
 
-export type MessageType =
-  | MessagePayload
-  | InteractionReplyOptions
-  | MessageEditOptions
-  | string
-  | InteractionEditReplyOptions
-  | InteractionUpdateOptions;
+export interface MessageData {
+  content?: string;
+  embeds?: APIEmbed[];
+  components?: APIActionRowComponent<APIButtonComponent>[];
+  flags?: number;
+}

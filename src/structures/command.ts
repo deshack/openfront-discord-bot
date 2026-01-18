@@ -1,8 +1,14 @@
-import { CommandInteraction, SharedSlashCommand } from "discord.js";
+import {
+  APIApplicationCommandInteraction,
+  APIInteractionResponse,
+  RESTPostAPIChatInputApplicationCommandsJSONBody,
+} from "discord-api-types/v10";
+import { Env } from "../types/env";
 
 export interface CommandHandler {
-  data: SharedSlashCommand;
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  options?: {};
-  execute(interaction: CommandInteraction): Promise<void>;
+  data: RESTPostAPIChatInputApplicationCommandsJSONBody;
+  execute(
+    interaction: APIApplicationCommandInteraction,
+    env: Env,
+  ): Promise<APIInteractionResponse>;
 }
