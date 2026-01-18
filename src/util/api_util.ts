@@ -1,5 +1,6 @@
 import {
   ClanLeaderboardData,
+  ClanSession,
   ClanStats,
   PlayerPublic,
   PlayerPublicRaw,
@@ -12,6 +13,7 @@ const API_PUBLIC_FFA_LEADERBOARD_PATH =
 const API_CLAN_LEADERBOARD_PATH =
   "https://api.openfront.io/public/clans/leaderboard";
 const API_CLAN_STATS_PATH = "https://api.openfront.io/public/clan/";
+const API_CLAN_SESSIONS_PATH = "https://api.openfront.io/public/clan/";
 const API_PLAYER_PATH = "https://api.openfront.io/player/";
 
 export interface ApiResponse<T> {
@@ -86,6 +88,25 @@ export async function getPlayerPublic(
 
   return {
     player: playerPublicRawToPlayerPublic(json),
+    fetchedAt: Date.now(),
+  };
+}
+
+export async function getClanSessions(
+  clanTag: string,
+  start: string,
+  end: string,
+): Promise<ApiResponse<ClanSession[]> | undefined> {
+  const url = `${API_CLAN_SESSIONS_PATH}${encodeURIComponent(clanTag)}/sessions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+  const res = await fetch(url);
+  if (res.status !== 200) {
+    return undefined;
+  }
+
+  const json = (await res.json()) as ClanSession[];
+
+  return {
+    data: json,
     fetchedAt: Date.now(),
   };
 }

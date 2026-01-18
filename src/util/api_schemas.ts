@@ -52,6 +52,18 @@ export interface ClanStats {
   >;
 }
 
+export interface ClanSession {
+  gameId: string;
+  clanTag: string;
+  clanPlayerCount: number;
+  hasWon: boolean;
+  numTeams: number;
+  playerTeams: string;
+  totalPlayerCount: number;
+  gameStart: string;
+  score: number;
+}
+
 export enum GameDifficulty {
   Easy = "Easy",
   Medium = "Medium",

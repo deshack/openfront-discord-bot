@@ -1,7 +1,32 @@
+import { readFileSync, existsSync } from "fs";
 import { REST, Routes } from "discord.js";
 import { commands } from "../commands";
 
+function loadDevVars(): void {
+  const devVarsPath = ".dev.vars";
+  if (!existsSync(devVarsPath)) {
+    return;
+  }
+
+  const content = readFileSync(devVarsPath, "utf-8");
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+    const eqIndex = trimmed.indexOf("=");
+    if (eqIndex === -1) {
+      continue;
+    }
+    const key = trimmed.slice(0, eqIndex);
+    const value = trimmed.slice(eqIndex + 1);
+    process.env[key] ??= value;
+  }
+}
+
 async function deployCommands() {
+  loadDevVars();
+
   const token = process.env.DISCORD_TOKEN;
   const clientId = process.env.DISCORD_CLIENT_ID;
 

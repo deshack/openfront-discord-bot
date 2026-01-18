@@ -5,6 +5,7 @@ import {
   InteractionResponseType,
   MessageFlags,
 } from "discord-api-types/v10";
+import { getClanSessionsMessage } from "../messages/clan_sessions";
 import { getClanStatsMessage } from "../messages/clan_stats";
 import { getPlayerPublicMessage } from "../messages/player_public";
 import { CommandHandler } from "../structures/command";
@@ -37,6 +38,31 @@ const command: CommandHandler = {
             name: "tag",
             description: "The clan tag",
             required: true,
+          },
+        ],
+      },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: "sessions",
+        description: "View clan game sessions",
+        options: [
+          {
+            type: ApplicationCommandOptionType.String,
+            name: "tag",
+            description: "The clan tag",
+            required: true,
+          },
+          {
+            type: ApplicationCommandOptionType.String,
+            name: "start",
+            description: "Start time (ISO 8601, defaults to 12 hours ago)",
+            required: false,
+          },
+          {
+            type: ApplicationCommandOptionType.String,
+            name: "end",
+            description: "End time (ISO 8601, defaults to now)",
+            required: false,
           },
         ],
       },
@@ -116,6 +142,51 @@ const command: CommandHandler = {
           type: InteractionResponseType.ChannelMessageWithSource,
           data: {
             content: "Failed to fetch clan stats.",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: message,
+      };
+    }
+
+    if (subcommand.name === "sessions") {
+      const tagOption = subcommand.options?.find((o) => o.name === "tag");
+      const tag =
+        tagOption && "value" in tagOption
+          ? String(tagOption.value).trim()
+          : undefined;
+
+      if (!tag) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: "Clan tag is required",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
+      const startOption = subcommand.options?.find((o) => o.name === "start");
+      const start =
+        startOption && "value" in startOption
+          ? String(startOption.value).trim()
+          : undefined;
+
+      const endOption = subcommand.options?.find((o) => o.name === "end");
+      const end =
+        endOption && "value" in endOption
+          ? String(endOption.value).trim()
+          : undefined;
+
+      const message = await getClanSessionsMessage(tag, start, end);
+      if (!message) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: "Failed to fetch clan sessions.",
             flags: MessageFlags.Ephemeral,
           },
         };
