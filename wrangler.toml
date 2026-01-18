@@ -17,3 +17,8 @@ kv_namespaces = [
 # Scheduled task runs every 15 minutes
 [triggers]
 crons = ["*/15 * * * *"]
+
+[observability]
+[observability.logs]
+enabled = true
+invocation_logs = true

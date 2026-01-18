@@ -12,8 +12,8 @@ export async function handleScheduled(env: Env): Promise<void> {
   }
 
   const now = new Date();
-  const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000);
-  const start = fifteenMinutesAgo.toISOString();
+  const startDate = new Date(now.getTime() - 8 * 6 * 60 * 60 * 1000);
+  const start = startDate.toISOString();
   const end = now.toISOString();
 
   for (const { guildId, config } of configs) {
