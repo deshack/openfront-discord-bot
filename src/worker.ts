@@ -4,6 +4,7 @@ import {
   InteractionType,
 } from "discord-api-types/v10";
 import { handleInteraction } from "./handlers/interaction";
+import { handleScheduled } from "./handlers/scheduled";
 import { Env } from "./types/env";
 import { verifyDiscordRequest } from "./util/verify";
 
@@ -31,5 +32,13 @@ export default {
     const response = await handleInteraction(interaction, env);
 
     return Response.json(response);
+  },
+
+  async scheduled(
+    _event: ScheduledEvent,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<void> {
+    ctx.waitUntil(handleScheduled(env));
   },
 };
