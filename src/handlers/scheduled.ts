@@ -12,7 +12,7 @@ export async function handleScheduled(env: Env): Promise<void> {
   }
 
   const now = new Date();
-  const startDate = new Date(now.getTime() - 8 * 6 * 60 * 60 * 1000);
+  const startDate = new Date(now.getTime() - 4 * 60 * 60 * 1000);
   const start = startDate.toISOString();
   const end = now.toISOString();
 
