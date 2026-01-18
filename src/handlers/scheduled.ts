@@ -1,6 +1,6 @@
 import { getClanWinMessage } from "../messages/clan_win";
 import { Env } from "../types/env";
-import { getClanSessions } from "../util/api_util";
+import { getClanSessions, getGameInfo } from "../util/api_util";
 import { sendChannelMessage } from "../util/discord";
 import { listGuildConfigs, isGamePosted, markGamePosted } from "../util/kv";
 
@@ -31,7 +31,16 @@ export async function handleScheduled(env: Env): Promise<void> {
           continue;
         }
 
-        const message = getClanWinMessage(win);
+        const gameInfoData = await getGameInfo(win.gameId, { includeTurns: false });
+
+        let clanPlayerUsernames: string[] = [];
+        if (gameInfoData) {
+          clanPlayerUsernames = gameInfoData.data.info.players
+            .filter((player) => player.clanTag === config.clanTag)
+            .map((player) => player.username);
+        }
+
+        const message = getClanWinMessage(win, clanPlayerUsernames);
         const success = await sendChannelMessage(
           env.DISCORD_TOKEN,
           config.channelId,

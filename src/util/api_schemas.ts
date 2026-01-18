@@ -239,3 +239,141 @@ function layeredStatsRawToLayeredStats(raw: LayeredStatsRaw): LayeredStats {
   }
   return notRaw;
 }
+
+// ========== Game Info API Types ==========
+
+export interface GamePlayerCosmetics {
+  flag: string;
+}
+
+export interface GamePlayerStatsRaw {
+  attacks?: number[];
+  betrayals?: string;
+  conquests?: string;
+  killedAt?: string;
+  boats?: Partial<Record<"trade" | "trans", number[]>>;
+  bombs?: Partial<Record<"abomb" | "hbomb" | "mirv" | "mirvw", number[]>>;
+  gold?: number[];
+  units?: Partial<
+    Record<"city" | "defp" | "port" | "saml" | "silo" | "wshp" | "fact", number[]>
+  >;
+}
+
+export interface GamePlayerRaw {
+  clientID: string;
+  username: string;
+  persistentID: string | null;
+  clanTag: string | null;
+  cosmetics: GamePlayerCosmetics;
+  stats: GamePlayerStatsRaw;
+}
+
+export interface GameConfigRaw {
+  gameMap: string;
+  difficulty: GameDifficulty;
+  donateGold: boolean;
+  donateTroops: boolean;
+  gameType: GameType;
+  gameMode: GameMode;
+  gameMapSize: string;
+  bots: number;
+  infiniteGold: boolean;
+  infiniteTroops: boolean;
+  instantBuild: boolean;
+  disabledUnits: string[];
+  playerTeams: number;
+  disableNPCs: boolean;
+}
+
+export interface GameInfoRaw {
+  gameID: string;
+  config: GameConfigRaw;
+  players: GamePlayerRaw[];
+  start: number;
+  end: number;
+  duration: number;
+  num_turns: number;
+  winner: ["player", string] | null;
+}
+
+export interface GameIntent {
+  clientID: string;
+  type: string;
+  [key: string]: unknown;
+}
+
+export interface GameTurn {
+  turnNumber: number;
+  intents: GameIntent[];
+  hash?: number;
+}
+
+export interface GameInfoResponseRaw {
+  version: string;
+  gitCommit: string;
+  domain: string;
+  subdomain: string;
+  info: GameInfoRaw;
+  turns?: GameTurn[];
+}
+
+export interface GamePlayer {
+  clientID: string;
+  username: string;
+  persistentID?: string;
+  clanTag?: string;
+  cosmetics: GamePlayerCosmetics;
+  stats: GamePlayerStatsRaw;
+}
+
+export interface GameInfo {
+  gameID: string;
+  config: GameConfigRaw;
+  players: GamePlayer[];
+  start: Date;
+  end: Date;
+  duration: number;
+  numTurns: number;
+  winner?: { type: "player"; clientID: string };
+}
+
+export interface GameInfoResponse {
+  version: string;
+  gitCommit: string;
+  domain: string;
+  subdomain: string;
+  info: GameInfo;
+  turns?: GameTurn[];
+}
+
+export function gameInfoResponseRawToGameInfoResponse(
+  raw: GameInfoResponseRaw,
+): GameInfoResponse {
+  return {
+    version: raw.version,
+    gitCommit: raw.gitCommit,
+    domain: raw.domain,
+    subdomain: raw.subdomain,
+    info: {
+      gameID: raw.info.gameID,
+      config: raw.info.config,
+      players: raw.info.players.map((player) => ({
+        clientID: player.clientID,
+        username: player.username,
+        persistentID: player.persistentID ?? undefined,
+        clanTag: player.clanTag ?? undefined,
+        cosmetics: player.cosmetics,
+        stats: player.stats,
+      })),
+      start: new Date(raw.info.start),
+      end: new Date(raw.info.end),
+      duration: raw.info.duration,
+      numTurns: raw.info.num_turns,
+      winner:
+        raw.info.winner === null
+          ? undefined
+          : { type: raw.info.winner[0], clientID: raw.info.winner[1] },
+    },
+    turns: raw.turns,
+  };
+}

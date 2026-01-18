@@ -5,12 +5,21 @@ import { dateToDiscordTimestamp, TimestampStyles } from "../util/date_format";
 
 const GAME_REPLAY_URL = "https://openfront.io/#join=";
 
-export function getClanWinMessage(session: ClanSession): MessageData {
+export function getClanWinMessage(
+  session: ClanSession,
+  clanPlayerUsernames: string[] = [],
+): MessageData {
   const gameStart = new Date(session.gameStart);
+
+  const playersLine =
+    clanPlayerUsernames.length > 0
+      ? `**Players**: ${clanPlayerUsernames.join(", ")}`
+      : "";
 
   const desc = dedent`
     **Team**: ${session.playerTeams} (${session.numTeams} teams)
     **Clan players**: \`${session.clanPlayerCount}\` / \`${session.totalPlayerCount}\` total
+    ${playersLine}
     **Score**: \`${session.score.toFixed(2)}\`
     **Started**: ${dateToDiscordTimestamp(gameStart, TimestampStyles.RelativeTime)}
 

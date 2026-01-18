@@ -2,6 +2,9 @@ import {
   ClanLeaderboardData,
   ClanSession,
   ClanStats,
+  GameInfoResponse,
+  GameInfoResponseRaw,
+  gameInfoResponseRawToGameInfoResponse,
   PlayerPublic,
   PlayerPublicRaw,
   playerPublicRawToPlayerPublic,
@@ -15,6 +18,7 @@ const API_CLAN_LEADERBOARD_PATH =
 const API_CLAN_STATS_PATH = "https://api.openfront.io/public/clan/";
 const API_CLAN_SESSIONS_PATH = "https://api.openfront.io/public/clan/";
 const API_PLAYER_PATH = "https://api.openfront.io/player/";
+const API_GAME_INFO_PATH = "https://api.openfront.io/public/game/";
 
 export interface ApiResponse<T> {
   data: T;
@@ -107,6 +111,33 @@ export async function getClanSessions(
 
   return {
     data: json,
+    fetchedAt: Date.now(),
+  };
+}
+
+export interface GetGameInfoOptions {
+  includeTurns?: boolean;
+}
+
+export async function getGameInfo(
+  gameId: string,
+  options?: GetGameInfoOptions,
+): Promise<ApiResponse<GameInfoResponse> | undefined> {
+  let url = `${API_GAME_INFO_PATH}${encodeURIComponent(gameId)}`;
+
+  if (options?.includeTurns === false) {
+    url += "?turns=false";
+  }
+
+  const res = await fetch(url);
+  if (res.status !== 200) {
+    return undefined;
+  }
+
+  const json = (await res.json()) as GameInfoResponseRaw;
+
+  return {
+    data: gameInfoResponseRawToGameInfoResponse(json),
     fetchedAt: Date.now(),
   };
 }
