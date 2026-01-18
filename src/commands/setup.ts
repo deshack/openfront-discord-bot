@@ -106,7 +106,7 @@ const command: CommandHandler = {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
-          content: `Win announcements enabled for clan **[${tag}]** in this channel. The bot will check for new wins every 15 minutes.`,
+          content: `Win announcements enabled for clan **[${tag}]** in this channel. The bot will check for new wins every 5 minutes.`,
         },
       };
     }
