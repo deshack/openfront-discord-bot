@@ -3,9 +3,9 @@ import { MessageData } from "../structures/message";
 import { GameDifficulty, GameMode } from "../util/api_schemas";
 import { getPlayerPublic } from "../util/api_util";
 import { dateToDiscordTimestamp, TimestampStyles } from "../util/date_format";
+import { gameUrl } from "../util/openfront";
 
 const RECENT_GAMES_LEN = 5;
-const GAME_REPLAY_URL = "https://openfront.io/#join=";
 
 export async function getPlayerPublicMessage(
   publicId: string,
@@ -27,7 +27,7 @@ export async function getPlayerPublicMessage(
           TimestampStyles.RelativeTime,
         )}
             ${game.mode} - ${game.difficulty} - ${game.map} - ${game.type}
-            [Watch replay](${GAME_REPLAY_URL}${game.gameId})
+            [Watch replay](${gameUrl(game.gameId)})
         `;
   });
 

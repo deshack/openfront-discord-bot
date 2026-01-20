@@ -34,13 +34,16 @@ export async function handleScheduled(env: Env): Promise<void> {
         const gameInfoData = await getGameInfo(win.gameId, { includeTurns: false });
 
         let clanPlayerUsernames: string[] = [];
+        let map: string = 'Unknown';
         if (gameInfoData) {
           clanPlayerUsernames = gameInfoData.data.info.players
             .filter((player) => player.clanTag === config.clanTag)
             .map((player) => player.username);
+
+          map = gameInfoData.data.info.config.gameMap;
         }
 
-        const message = getClanWinMessage(win, clanPlayerUsernames);
+        const message = getClanWinMessage(win, clanPlayerUsernames, map);
         const success = await sendChannelMessage(
           env.DISCORD_TOKEN,
           config.channelId,

@@ -2,12 +2,12 @@ import dedent from "dedent";
 import { MessageData } from "../structures/message";
 import { ClanSession } from "../util/api_schemas";
 import { dateToDiscordTimestamp, TimestampStyles } from "../util/date_format";
-
-const GAME_REPLAY_URL = "https://openfront.io/#join=";
+import { gameUrl, mapUrl } from "../util/openfront";
 
 export function getClanWinMessage(
   session: ClanSession,
   clanPlayerUsernames: string[] = [],
+  map: string,
 ): MessageData {
   const gameStart = new Date(session.gameStart);
 
@@ -18,12 +18,13 @@ export function getClanWinMessage(
 
   const desc = dedent`
     **Team**: ${session.playerTeams} (${session.numTeams} teams)
+    **Map**: ${map}
     **Clan players**: \`${session.clanPlayerCount}\` / \`${session.totalPlayerCount}\` total
     ${playersLine}
     **Score**: \`${session.score.toFixed(2)}\`
     **Started**: ${dateToDiscordTimestamp(gameStart, TimestampStyles.RelativeTime)}
 
-    [Watch replay](${GAME_REPLAY_URL}${session.gameId})
+    [Watch replay](${gameUrl(session.gameId)})
     `;
 
   return {
@@ -32,6 +33,9 @@ export function getClanWinMessage(
         title: `[${session.clanTag}] Victory!`,
         description: desc,
         color: 0x00ff00,
+        image: {
+          url: mapUrl(map),
+        },
         footer: { text: `Game ID: ${session.gameId}` },
         timestamp: gameStart.toISOString(),
       },
