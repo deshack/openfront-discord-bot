@@ -20,8 +20,7 @@ export async function sendChannelMessage(
 
   if (!response.ok) {
     console.error(
-      `Failed to send message to channel ${channelId}: ${response.status} ${response.statusText}`,
-      response
+      `Failed to send message to channel ${channelId}: ${response.status} ${response.statusText} - body: ${JSON.stringify(message)}`,
     );
   }
 
