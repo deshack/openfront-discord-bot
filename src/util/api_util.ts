@@ -8,6 +8,7 @@ import {
   PlayerPublic,
   PlayerPublicRaw,
   playerPublicRawToPlayerPublic,
+  PlayerSession,
   PublicFFALeaderboardEntry,
 } from "./api_schemas";
 
@@ -18,6 +19,7 @@ const API_CLAN_LEADERBOARD_PATH =
 const API_CLAN_STATS_PATH = "https://api.openfront.io/public/clan/";
 const API_CLAN_SESSIONS_PATH = "https://api.openfront.io/public/clan/";
 const API_PLAYER_PATH = "https://api.openfront.io/player/";
+const API_PLAYER_SESSIONS_PATH = "https://api.openfront.io/public/player/";
 const API_GAME_INFO_PATH = "https://api.openfront.io/public/game/";
 
 export interface ApiResponse<T> {
@@ -138,6 +140,25 @@ export async function getGameInfo(
 
   return {
     data: gameInfoResponseRawToGameInfoResponse(json),
+    fetchedAt: Date.now(),
+  };
+}
+
+export async function getPlayerSessions(
+  playerId: string,
+  start: string,
+  end: string,
+): Promise<ApiResponse<PlayerSession[]> | undefined> {
+  const url = `${API_PLAYER_SESSIONS_PATH}${encodeURIComponent(playerId)}/sessions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+  const res = await fetch(url);
+  if (res.status !== 200) {
+    return undefined;
+  }
+
+  const json = (await res.json()) as PlayerSession[];
+
+  return {
+    data: json,
     fetchedAt: Date.now(),
   };
 }
