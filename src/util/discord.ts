@@ -18,5 +18,12 @@ export async function sendChannelMessage(
     body: JSON.stringify(message),
   });
 
+  if (!response.ok) {
+    console.error(
+      `Failed to send message to channel ${channelId}: ${response.status} ${response.statusText}`,
+      response
+    );
+  }
+
   return response.ok;
 }
