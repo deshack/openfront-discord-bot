@@ -6,7 +6,8 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy",
+    "migrate": "wrangler d1 migrations apply DB --remote",
+    "deploy": "wrangler deploy",
     "deploy-commands": "tsx src/scripts/deploy_commands.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
