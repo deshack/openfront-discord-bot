@@ -2,16 +2,22 @@ import { getClanWinMessage } from "../messages/clan_win";
 import { getFFAWinMessage } from "../messages/ffa_win";
 import { Env } from "../types/env";
 import { GameMode, GameType } from "../util/api_schemas";
-import { getClanSessions, getGameInfo, getPlayerSessions } from "../util/api_util";
+import {
+  getClanSessions,
+  getGameInfo,
+  getPlayerSessions,
+} from "../util/api_util";
+import { listAllPlayerRegistrations, listGuildConfigs } from "../util/db";
 import { sendChannelMessage } from "../util/discord";
-import { listGuildConfigs, listAllPlayerRegistrations } from "../util/db";
-import { isGamePosted, markGamePosted, isFFAGamePosted, markFFAGamePosted } from "../util/kv";
+import {
+  isFFAGamePosted,
+  isGamePosted,
+  markFFAGamePosted,
+  markGamePosted,
+} from "../util/kv";
 
 export async function handleScheduled(env: Env): Promise<void> {
-  await Promise.all([
-    handleClanWins(env),
-    handleFFAWins(env),
-  ]);
+  await Promise.all([handleClanWins(env), handleFFAWins(env)]);
 }
 
 async function handleClanWins(env: Env): Promise<void> {
@@ -41,10 +47,12 @@ async function handleClanWins(env: Env): Promise<void> {
           continue;
         }
 
-        const gameInfoData = await getGameInfo(win.gameId, { includeTurns: false });
+        const gameInfoData = await getGameInfo(win.gameId, {
+          includeTurns: false,
+        });
 
         let clanPlayerUsernames: string[] = [];
-        let map: string = 'Unknown';
+        let map: string = "Unknown";
         if (gameInfoData) {
           clanPlayerUsernames = gameInfoData.data.info.players
             .filter((player) => player.clanTag === config.clanTag)
@@ -78,14 +86,19 @@ async function handleFFAWins(env: Env): Promise<void> {
   }
 
   const now = new Date();
-  const startDate = new Date(now.getTime() - 4 * 60 * 60 * 1000);
+  // const startDate = new Date(now.getTime() - 4 * 60 * 60 * 1000);
+  const startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const start = startDate.toISOString();
   const end = now.toISOString();
 
   for (const { guildId, registrations } of guildRegistrations) {
     for (const registration of registrations) {
       try {
-        const sessionsData = await getPlayerSessions(registration.playerId, start, end);
+        const sessionsData = await getPlayerSessions(
+          registration.playerId,
+          start,
+          end,
+        );
         if (!sessionsData) {
           continue;
         }
@@ -94,7 +107,8 @@ async function handleFFAWins(env: Env): Promise<void> {
           (session) =>
             session.hasWon &&
             session.gameType === GameType.Public &&
-            session.gameMode === GameMode.FFA,
+            session.gameMode === GameMode.FFA &&
+            session.gameStart >= startDate.toISOString(),
         );
 
         for (const win of ffaWins) {
@@ -108,7 +122,10 @@ async function handleFFAWins(env: Env): Promise<void> {
             continue;
           }
 
-          const message = getFFAWinMessage(registration.discordUserId, win.gameId);
+          const message = getFFAWinMessage(
+            registration.discordUserId,
+            win.gameId,
+          );
           const success = await sendChannelMessage(
             env.DISCORD_TOKEN,
             registration.channelId,
@@ -116,7 +133,12 @@ async function handleFFAWins(env: Env): Promise<void> {
           );
 
           if (success) {
-            await markFFAGamePosted(env.DATA, guildId, registration.playerId, win.gameId);
+            await markFFAGamePosted(
+              env.DATA,
+              guildId,
+              registration.playerId,
+              win.gameId,
+            );
           }
         }
       } catch (error) {
