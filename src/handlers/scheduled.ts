@@ -21,9 +21,13 @@ export async function handleScheduled(env: Env): Promise<void> {
 }
 
 async function handleClanWins(env: Env): Promise<void> {
+  console.debug('Running scheduled task for clan wins.');
+
   const configs = await listGuildConfigs(env.DB);
 
   if (configs.length === 0) {
+    console.info('No clan wins configs found. Skipping scheduled task.');
+
     return;
   }
 
@@ -79,9 +83,13 @@ async function handleClanWins(env: Env): Promise<void> {
 }
 
 async function handleFFAWins(env: Env): Promise<void> {
+  console.debug("Running scheduled task for FFA wins.");
+
   const guildRegistrations = await listAllPlayerRegistrations(env.DB);
 
   if (guildRegistrations.length === 0) {
+    console.info("No FFA wins configs found. Skipping scheduled task.");
+
     return;
   }
 
