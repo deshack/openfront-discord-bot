@@ -7,7 +7,7 @@ import {
   PermissionFlagsBits,
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
-import { setGuildConfig, getGuildConfig, deleteGuildConfig } from "../util/kv";
+import { setGuildConfig, getGuildConfig, deleteGuildConfig } from "../util/db";
 
 const command: CommandHandler = {
   data: {
@@ -98,7 +98,7 @@ const command: CommandHandler = {
         };
       }
 
-      await setGuildConfig(env.DATA, guildId, {
+      await setGuildConfig(env.DB, guildId, {
         clanTag: tag,
         channelId,
       });
@@ -112,7 +112,7 @@ const command: CommandHandler = {
     }
 
     if (subcommand.name === "disable") {
-      await deleteGuildConfig(env.DATA, guildId);
+      await deleteGuildConfig(env.DB, guildId);
 
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
@@ -123,7 +123,7 @@ const command: CommandHandler = {
     }
 
     if (subcommand.name === "status") {
-      const config = await getGuildConfig(env.DATA, guildId);
+      const config = await getGuildConfig(env.DB, guildId);
 
       if (!config) {
         return {

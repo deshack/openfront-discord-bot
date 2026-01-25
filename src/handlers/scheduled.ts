@@ -2,10 +2,11 @@ import { getClanWinMessage } from "../messages/clan_win";
 import { Env } from "../types/env";
 import { getClanSessions, getGameInfo } from "../util/api_util";
 import { sendChannelMessage } from "../util/discord";
-import { listGuildConfigs, isGamePosted, markGamePosted } from "../util/kv";
+import { listGuildConfigs } from "../util/db";
+import { isGamePosted, markGamePosted } from "../util/kv";
 
 export async function handleScheduled(env: Env): Promise<void> {
-  const configs = await listGuildConfigs(env.DATA);
+  const configs = await listGuildConfigs(env.DB);
 
   if (configs.length === 0) {
     return;

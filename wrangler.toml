@@ -7,12 +7,19 @@ compatibility_date = "2026-01-18"
 # wrangler secret put DISCORD_PUBLIC_KEY
 # wrangler secret put DISCORD_CLIENT_ID
 
-# KV namespace for guild configs and posted games
+# KV namespace for posted games tracking (has native TTL support)
 # Create with: wrangler kv namespace create DATA
-# Then add the id below
 kv_namespaces = [
   { binding = "DATA", id = "e20449398e34450cb82b29c34628a401" }
 ]
+
+# D1 database for guild configuration
+# Create with: wrangler d1 create openfront-bot-db
+[[d1_databases]]
+binding = "DB"
+database_name = "openfront-bot-db"
+database_id = "dc44eb75-0c1f-4720-8225-1f7aab20cb31"
+migrations_dir = "migrations"
 
 # Scheduled task runs every 15 minutes
 [triggers]

@@ -3,4 +3,5 @@ export interface Env {
   DISCORD_PUBLIC_KEY: string;
   DISCORD_CLIENT_ID: string;
   DATA: KVNamespace;
+  DB: D1Database;
 }
