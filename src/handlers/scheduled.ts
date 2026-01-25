@@ -1,11 +1,20 @@
 import { getClanWinMessage } from "../messages/clan_win";
+import { getFFAWinMessage } from "../messages/ffa_win";
 import { Env } from "../types/env";
-import { getClanSessions, getGameInfo } from "../util/api_util";
+import { GameMode, GameType } from "../util/api_schemas";
+import { getClanSessions, getGameInfo, getPlayerSessions } from "../util/api_util";
 import { sendChannelMessage } from "../util/discord";
-import { listGuildConfigs } from "../util/db";
-import { isGamePosted, markGamePosted } from "../util/kv";
+import { listGuildConfigs, listAllPlayerRegistrations } from "../util/db";
+import { isGamePosted, markGamePosted, isFFAGamePosted, markFFAGamePosted } from "../util/kv";
 
 export async function handleScheduled(env: Env): Promise<void> {
+  await Promise.all([
+    handleClanWins(env),
+    handleFFAWins(env),
+  ]);
+}
+
+async function handleClanWins(env: Env): Promise<void> {
   const configs = await listGuildConfigs(env.DB);
 
   if (configs.length === 0) {
@@ -56,7 +65,66 @@ export async function handleScheduled(env: Env): Promise<void> {
         }
       }
     } catch (error) {
-      console.error(`Error processing guild ${guildId}:`, error);
+      console.error(`Error processing clan wins for guild ${guildId}:`, error);
+    }
+  }
+}
+
+async function handleFFAWins(env: Env): Promise<void> {
+  const guildRegistrations = await listAllPlayerRegistrations(env.DB);
+
+  if (guildRegistrations.length === 0) {
+    return;
+  }
+
+  const now = new Date();
+  const startDate = new Date(now.getTime() - 4 * 60 * 60 * 1000);
+  const start = startDate.toISOString();
+  const end = now.toISOString();
+
+  for (const { guildId, registrations } of guildRegistrations) {
+    for (const registration of registrations) {
+      try {
+        const sessionsData = await getPlayerSessions(registration.playerId, start, end);
+        if (!sessionsData) {
+          continue;
+        }
+
+        const ffaWins = sessionsData.data.filter(
+          (session) =>
+            session.hasWon &&
+            session.gameType === GameType.Public &&
+            session.gameMode === GameMode.FFA,
+        );
+
+        for (const win of ffaWins) {
+          const alreadyPosted = await isFFAGamePosted(
+            env.DATA,
+            guildId,
+            registration.playerId,
+            win.gameId,
+          );
+          if (alreadyPosted) {
+            continue;
+          }
+
+          const message = getFFAWinMessage(registration.discordUserId, win.gameId);
+          const success = await sendChannelMessage(
+            env.DISCORD_TOKEN,
+            registration.channelId,
+            message,
+          );
+
+          if (success) {
+            await markFFAGamePosted(env.DATA, guildId, registration.playerId, win.gameId);
+          }
+        }
+      } catch (error) {
+        console.error(
+          `Error processing FFA wins for player ${registration.playerId} in guild ${guildId}:`,
+          error,
+        );
+      }
     }
   }
 }

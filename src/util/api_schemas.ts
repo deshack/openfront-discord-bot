@@ -64,6 +64,18 @@ export interface ClanSession {
   score: number;
 }
 
+export interface PlayerSession {
+  gameId: string;
+  gameStart: string;
+  gameEnd: string;
+  gameType: GameType;
+  gameMode: GameMode;
+  clientId: string;
+  username: string;
+  clanTag: string | null;
+  hasWon: boolean;
+}
+
 export enum GameDifficulty {
   Easy = "Easy",
   Medium = "Medium",
