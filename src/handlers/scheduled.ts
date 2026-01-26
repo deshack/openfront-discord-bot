@@ -82,6 +82,39 @@ async function handleClanWins(env: Env): Promise<void> {
   }
 }
 
+interface FFAWinToPost {
+  guildId: string;
+  playerId: string;
+  discordUserId: string;
+  channelId: string;
+  gameId: string;
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let currentIndex = 0;
+
+  async function worker(): Promise<void> {
+    while (currentIndex < items.length) {
+      const index = currentIndex++;
+      results[index] = await fn(items[index]);
+    }
+  }
+
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    () => worker(),
+  );
+
+  await Promise.all(workers);
+
+  return results;
+}
+
 async function handleFFAWins(env: Env): Promise<void> {
   console.debug("Running scheduled task for FFA wins.");
 
@@ -98,16 +131,24 @@ async function handleFFAWins(env: Env): Promise<void> {
   const start = startDate.toISOString();
   const end = now.toISOString();
 
-  for (const { guildId, registrations } of guildRegistrations) {
-    for (const registration of registrations) {
+  const allRegistrations = guildRegistrations.flatMap(
+    ({ guildId, registrations }) =>
+      registrations.map((registration) => ({ guildId, registration })),
+  );
+
+  const sessionsResults = await mapWithConcurrency(
+    allRegistrations,
+    5,
+    async ({ guildId, registration }) => {
       try {
         const sessionsData = await getPlayerSessions(
           registration.playerId,
           start,
           end,
         );
+
         if (!sessionsData) {
-          continue;
+          return [];
         }
 
         const ffaWins = sessionsData.data.filter(
@@ -118,42 +159,67 @@ async function handleFFAWins(env: Env): Promise<void> {
             session.gameStart >= startDate.toISOString(),
         );
 
-        for (const win of ffaWins) {
-          const alreadyPosted = await isFFAGamePosted(
-            env.DATA,
-            guildId,
-            registration.playerId,
-            win.gameId,
-          );
-          if (alreadyPosted) {
-            continue;
-          }
-
-          const message = getFFAWinMessage(
-            registration.discordUserId,
-            win.gameId,
-          );
-          const success = await sendChannelMessage(
-            env.DISCORD_TOKEN,
-            registration.channelId,
-            message,
-          );
-
-          if (success) {
-            await markFFAGamePosted(
-              env.DATA,
-              guildId,
-              registration.playerId,
-              win.gameId,
-            );
-          }
-        }
+        return ffaWins.map((win) => ({
+          guildId,
+          playerId: registration.playerId,
+          discordUserId: registration.discordUserId,
+          channelId: registration.channelId,
+          gameId: win.gameId,
+        }));
       } catch (error) {
         console.error(
-          `Error processing FFA wins for player ${registration.playerId} in guild ${guildId}:`,
+          `Error fetching sessions for player ${registration.playerId} in guild ${guildId}:`,
           error,
         );
+
+        return [];
       }
+    },
+  );
+
+  const allWins = sessionsResults.flat();
+
+  const dedupeKey = (win: FFAWinToPost) =>
+    `${win.guildId}:${win.playerId}:${win.gameId}`;
+  const seenKeys = new Set<string>();
+  const uniqueWins = allWins.filter((win) => {
+    const key = dedupeKey(win);
+    if (seenKeys.has(key)) {
+      return false;
+    }
+    seenKeys.add(key);
+
+    return true;
+  });
+
+  for (const win of uniqueWins) {
+    try {
+      const alreadyPosted = await isFFAGamePosted(
+        env.DATA,
+        win.guildId,
+        win.playerId,
+        win.gameId,
+      );
+
+      if (alreadyPosted) {
+        continue;
+      }
+
+      const message = getFFAWinMessage(win.discordUserId, win.gameId);
+      const success = await sendChannelMessage(
+        env.DISCORD_TOKEN,
+        win.channelId,
+        message,
+      );
+
+      if (success) {
+        await markFFAGamePosted(env.DATA, win.guildId, win.playerId, win.gameId);
+      }
+    } catch (error) {
+      console.error(
+        `Error posting FFA win for player ${win.playerId} in guild ${win.guildId}:`,
+        error,
+      );
     }
   }
 }
