@@ -57,15 +57,17 @@ async function handleClanWins(env: Env): Promise<void> {
 
         let clanPlayerUsernames: string[] = [];
         let map: string = "Unknown";
+        let duration: number | undefined;
         if (gameInfoData) {
           clanPlayerUsernames = gameInfoData.data.info.players
             .filter((player) => player.clanTag === config.clanTag)
             .map((player) => player.username);
 
           map = gameInfoData.data.info.config.gameMap;
+          duration = gameInfoData.data.info.duration;
         }
 
-        const message = getClanWinMessage(win, clanPlayerUsernames, map);
+        const message = getClanWinMessage(win, clanPlayerUsernames, map, duration);
         const success = await sendChannelMessage(
           env.DISCORD_TOKEN,
           config.channelId,
@@ -205,7 +207,13 @@ async function handleFFAWins(env: Env): Promise<void> {
         continue;
       }
 
-      const message = getFFAWinMessage(win.discordUserId, win.gameId);
+      const gameInfoData = await getGameInfo(win.gameId, { includeTurns: false });
+
+      const message = getFFAWinMessage({
+        discordUserId: win.discordUserId,
+        gameId: win.gameId,
+        gameInfo: gameInfoData?.data.info,
+      });
       const success = await sendChannelMessage(
         env.DISCORD_TOKEN,
         win.channelId,
