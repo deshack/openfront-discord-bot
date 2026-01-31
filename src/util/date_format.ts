@@ -17,11 +17,10 @@ export function dateToDiscordTimestamp(
   return `<t:${Math.floor(date.getTime() / 1000)}:${style}>`;
 }
 
-export function formatDuration(durationMs: number): string {
-  const totalSeconds = Math.floor(durationMs / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
+export function formatDuration(durationSeconds: number): string {
+  const hours = Math.floor(durationSeconds / 3600);
+  const minutes = Math.floor((durationSeconds % 3600) / 60);
+  const seconds = durationSeconds % 60;
 
   const parts: string[] = [];
   if (hours > 0) parts.push(`${hours}h`);
