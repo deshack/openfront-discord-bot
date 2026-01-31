@@ -205,7 +205,13 @@ async function handleFFAWins(env: Env): Promise<void> {
         continue;
       }
 
-      const message = getFFAWinMessage(win.discordUserId, win.gameId);
+      const gameInfoData = await getGameInfo(win.gameId, { includeTurns: false });
+
+      const message = getFFAWinMessage({
+        discordUserId: win.discordUserId,
+        gameId: win.gameId,
+        gameInfo: gameInfoData?.data.info,
+      });
       const success = await sendChannelMessage(
         env.DISCORD_TOKEN,
         win.channelId,
