@@ -41,7 +41,9 @@ export function getFFAWinMessage(data: FFAWinData): MessageData {
   const title = is1v1 ? "1v1 Win!" : "FFA Win!";
 
   const opponent = is1v1
-    ? gameInfo.players.find((p) => p.clientID !== winnerClientId)
+    ? (winnerClientId != null
+        ? gameInfo.players.find((p) => p.clientID !== winnerClientId)
+        : undefined)
     : undefined;
   const opponentUsername = opponent?.username ?? "Unknown";
 
