@@ -37,22 +37,42 @@ export function getFFAWinMessage(data: FFAWinData): MessageData {
     TimestampStyles.RelativeTime,
   );
 
-  const desc = dedent`
-    **Map**: ${map}
-    **Players**: \`${totalPlayers}\`
-    **Winner**: ${winnerUsername} (<@${discordUserId}>)
-    **Duration**: ${duration}
-    **Started**: ${startedAt}
+  const is1v1 = totalPlayers === 2;
+  const title = is1v1 ? "1v1 Win!" : "FFA Win!";
 
-    [Watch replay](${gameUrl(gameId)})
-    `;
+  const opponent = is1v1
+    ? gameInfo.players.find((p) => p.clientID !== winnerClientId)
+    : undefined;
+  const opponentUsername = opponent?.username ?? "Unknown";
+
+  const desc = is1v1
+    ? dedent`
+      **Map**: ${map}
+      **Winner**: ${winnerUsername} (<@${discordUserId}>)
+      **Opponent**: ${opponentUsername}
+      **Duration**: ${duration}
+      **Started**: ${startedAt}
+
+      [Watch replay](${gameUrl(gameId)})
+      `
+    : dedent`
+      **Map**: ${map}
+      **Players**: \`${totalPlayers}\`
+      **Winner**: ${winnerUsername} (<@${discordUserId}>)
+      **Duration**: ${duration}
+      **Started**: ${startedAt}
+
+      [Watch replay](${gameUrl(gameId)})
+      `;
+
+  const color = is1v1 ? 0x3498db : 0xffd700;
 
   return {
     embeds: [
       {
-        title: "FFA Win!",
+        title,
         description: desc,
-        color: 0xffd700,
+        color,
         image: {
           url: mapUrl(map),
         },
