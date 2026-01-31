@@ -30,7 +30,7 @@ export function getFFAWinMessage(data: FFAWinData): MessageData {
   const winnerUsername = winnerPlayer?.username ?? "Unknown";
 
   const map = gameInfo.config.gameMap;
-  const totalPlayers = gameInfo.players.length;
+  const totalPlayers = gameInfo.players.filter((player) => player.stats != null).length;
   const duration = formatDuration(gameInfo.duration);
   const startedAt = dateToDiscordTimestamp(
     gameInfo.start,
