@@ -80,7 +80,7 @@ export async function recordPlayerWin(
   await db
     .prepare(
       `INSERT INTO player_stats (guild_id, username, game_id, game_type, score, game_start)
-       VALUES (?, ?, ?, ?, ?)
+       VALUES (?, ?, ?, ?, ?, ?)
        ON CONFLICT (guild_id, username, game_id) DO NOTHING`,
     )
     .bind(guildId, username, gameId, gameMode, score, gameStartTimestamp)
