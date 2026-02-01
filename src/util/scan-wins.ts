@@ -38,7 +38,7 @@ export async function initializeScanJob(
     if (sessionsData) {
       const winningGameIds = sessionsData.data
         .filter((session) => session.hasWon)
-        .map((session) => session.gameId);
+        .map((session) => `${session.gameId}:${session.score}`);
 
       await initializeScanJobClanGames(db, job.id, winningGameIds);
 
@@ -76,8 +76,10 @@ export async function processClanBatch(
 
   let playersRecorded = job.clanPlayersRecorded;
 
-  for (const gameId of gamesToProcess) {
+  for (const gameIdString of gamesToProcess) {
     await delay(DELAY_BETWEEN_API_CALLS_MS);
+
+    const [gameId, score] = gameIdString.split(":");
 
     const gameInfoData = await getGameInfo(gameId, { includeTurns: false });
     if (!gameInfoData) {
@@ -89,15 +91,15 @@ export async function processClanBatch(
       (player) => player.clanTag === job.clanTag,
     );
 
+    const scoreFloat = parseFloat(score);
+    const winScore = isNaN(scoreFloat) ? 0 : scoreFloat;
     for (const player of clanPlayers) {
-      const winnerScore = player.stats.gold?.[0] ?? 0;
-
       await recordPlayerWin(
         db,
         job.guildId,
         player.username,
         gameId,
-        winnerScore,
+        winScore,
         gameInfo.start.toISOString(),
       );
       playersRecorded++;
@@ -156,7 +158,9 @@ export async function processFFABatch(
     for (const win of winsToProcess) {
       await delay(DELAY_BETWEEN_API_CALLS_MS);
 
-      const gameInfoData = await getGameInfo(win.gameId, { includeTurns: false });
+      const gameInfoData = await getGameInfo(win.gameId, {
+        includeTurns: false,
+      });
       if (!gameInfoData) {
         continue;
       }
@@ -193,7 +197,12 @@ export async function processFFABatch(
   }
 
   const nextPlayerIndex = currentPlayerIndex + 1;
-  await updateScanJobFFAProgress(db, job.id, nextPlayerIndex, totalWinsProcessed);
+  await updateScanJobFFAProgress(
+    db,
+    job.id,
+    nextPlayerIndex,
+    totalWinsProcessed,
+  );
 
   const hasMore = nextPlayerIndex < job.ffaPlayerIds.length;
 
