@@ -293,15 +293,13 @@ export async function createScanJobClanSession(
   scanJobId: number,
   gameId: string,
   score: number,
-): Promise<number> {
-  const result = await db
+): Promise<void> {
+  await db
     .prepare(
       `INSERT INTO scan_job_clan_sessions (scan_job_id, game_id, score) VALUES (?, ?, ?)`,
     )
     .bind(scanJobId, gameId, score)
     .run();
-
-  return result.meta.last_row_id as number;
 }
 const STALE_THRESHOLD_SECONDS = 300;
 
