@@ -6,10 +6,12 @@ import {
   MessageFlags,
   PermissionFlagsBits,
 } from "discord-api-types/v10";
-import { CommandContext, CommandHandler } from "../structures/command";
-import { Env } from "../types/env";
-import { getGuildConfig } from "../util/db";
-import { scanHistoricalWins } from "../util/scan-wins";
+import { CommandHandler } from "../structures/command";
+import {
+  createScanJob,
+  getActiveScanJobForGuild,
+  getGuildConfig,
+} from "../util/db";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -21,79 +23,6 @@ function isValidDateString(dateStr: string): boolean {
   const date = new Date(`${dateStr}T00:00:00Z`);
 
   return !isNaN(date.getTime()) && date.toISOString().startsWith(dateStr);
-}
-
-async function followUp(
-  token: string,
-  applicationId: string,
-  interactionToken: string,
-  content: string,
-): Promise<void> {
-  const url = `https://discord.com/api/v10/webhooks/${applicationId}/${interactionToken}`;
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bot ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ content }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Discord follow-up failed: ${res.status} ${text}`);
-  }
-}
-
-async function runScan(
-  env: Env,
-  guildId: string,
-  clanTag: string | null,
-  startDate: Date,
-  endDate: Date,
-  startDateStr: string,
-  endDateStr: string,
-  applicationId: string,
-  interactionToken: string,
-): Promise<void> {
-  try {
-    const result = await scanHistoricalWins(
-      env.DB,
-      guildId,
-      clanTag,
-      startDate.toISOString(),
-      endDate.toISOString(),
-    );
-
-    const parts: string[] = [];
-    parts.push(`**Scan Complete** (${startDateStr} to ${endDateStr})`);
-
-    if (clanTag) {
-      parts.push(
-        `**Clan [${clanTag}]:** ${result.clanWinsProcessed} wins processed, ${result.clanPlayersRecorded} player records added`,
-      );
-    } else {
-      parts.push("*No clan configured - skipped clan win scanning*");
-    }
-
-    parts.push(
-      `**FFA:** ${result.ffaWinsProcessed} wins processed for registered players`,
-    );
-
-    const message = parts.join("\n");
-
-    await followUp(env.DISCORD_TOKEN, applicationId, interactionToken, message);
-  } catch (error) {
-    console.error("Error scanning historical wins:", error);
-
-    await followUp(
-      env.DISCORD_TOKEN,
-      applicationId,
-      interactionToken,
-      "An error occurred while scanning historical wins. Please try again later.",
-    );
-  }
 }
 
 const command: CommandHandler = {
@@ -118,7 +47,7 @@ const command: CommandHandler = {
     ],
   },
   requiresPremium: true,
-  async execute(interaction, env, ctx?: CommandContext) {
+  async execute(interaction, env) {
     const guildId = interaction.guild_id;
     if (!guildId) {
       return {
@@ -175,50 +104,35 @@ const command: CommandHandler = {
       };
     }
 
-    const guildConfig = await getGuildConfig(env.DB, guildId);
-    const clanTag = guildConfig?.clanTag ?? null;
-
-    const interactionToken = interaction.token;
-    const applicationId = env.DISCORD_CLIENT_ID;
-
-    if (ctx) {
-      ctx.waitUntil(
-        runScan(
-          env,
-          guildId,
-          clanTag,
-          startDate,
-          endDate,
-          startDateStr,
-          endDateStr,
-          applicationId,
-          interactionToken,
-        ),
-      );
-
+    const existingJob = await getActiveScanJobForGuild(env.DB, guildId);
+    if (existingJob) {
       return {
-        type: InteractionResponseType.DeferredChannelMessageWithSource,
+        type: InteractionResponseType.ChannelMessageWithSource,
         data: {
+          content:
+            "A scan is already in progress for this server. Please wait for it to complete.",
           flags: MessageFlags.Ephemeral,
         },
       };
     }
 
-    void runScan(
-      env,
+    const guildConfig = await getGuildConfig(env.DB, guildId);
+    const clanTag = guildConfig?.clanTag ?? null;
+    const channelId = interaction.channel?.id ?? interaction.channel_id ?? "";
+
+    await createScanJob(
+      env.DB,
       guildId,
+      channelId,
       clanTag,
-      startDate,
-      endDate,
-      startDateStr,
-      endDateStr,
-      applicationId,
-      interactionToken,
+      startDate.toISOString(),
+      endDate.toISOString(),
     );
 
     return {
-      type: InteractionResponseType.DeferredChannelMessageWithSource,
+      type: InteractionResponseType.ChannelMessageWithSource,
       data: {
+        content: `Scan job queued for ${startDateStr} to ${endDateStr}. You'll be notified in this channel when complete.`,
         flags: MessageFlags.Ephemeral,
       },
     };

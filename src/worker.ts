@@ -4,7 +4,7 @@ import {
   InteractionType,
 } from "discord-api-types/v10";
 import { handleInteraction } from "./handlers/interaction";
-import { handleScheduled } from "./handlers/scheduled";
+import { handleScanJobs, handleScheduled } from "./handlers/scheduled";
 import { Env } from "./types/env";
 import { verifyDiscordRequest } from "./util/verify";
 
@@ -41,10 +41,16 @@ export default {
   },
 
   async scheduled(
-    _event: ScheduledEvent,
+    event: ScheduledEvent,
     env: Env,
     ctx: ExecutionContext,
   ): Promise<void> {
+    if (event.cron === "* * * * *") {
+      ctx.waitUntil(handleScanJobs(env));
+
+      return;
+    }
+
     ctx.waitUntil(handleScheduled(env));
   },
 };
