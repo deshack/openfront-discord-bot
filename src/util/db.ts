@@ -359,8 +359,8 @@ export async function getClanSessionsJobBatch(
     .prepare(
       `UPDATE scan_job_clan_sessions
        SET status = 'processing', started_at = unixepoch()
-       WHERE id IN (
-         SELECT id FROM scan_job_clan_sessions
+       WHERE game_id IN (
+         SELECT game_id FROM scan_job_clan_sessions
          WHERE job_id = ?
            AND (status = 'pending'
            OR (unixepoch() - COALESCE(started_at, 0)) > ?)
