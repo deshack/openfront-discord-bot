@@ -8,7 +8,7 @@ import { getClanLeaderboardMessage } from "../messages/clan_leaderboard";
 import { getPublicFFALeaderboardMessage } from "../messages/public_ffa_leaderboard";
 import { getRankMessage } from "../messages/rank";
 import { Env } from "../types/env";
-import { LeaderboardPeriod } from "../util/stats";
+import { LeaderboardPeriod, MonthContext } from "../util/stats";
 
 export async function handleButton(
   interaction: APIMessageComponentInteraction,
@@ -56,7 +56,7 @@ export async function handleButton(
     };
   }
 
-  if (customId.startsWith("rank-")) {
+  if (customId.startsWith("rank|")) {
     const guildId = interaction.guild_id;
     if (!guildId) {
       return {
@@ -68,11 +68,18 @@ export async function handleButton(
       };
     }
 
-    const parts = customId.split("-");
+    const parts = customId.split("|");
     const period = parts[1] as LeaderboardPeriod;
-    const page = parseInt(parts[2]);
+    const year = parseInt(parts[2]);
+    const month = parseInt(parts[3]);
+    const page = parseInt(parts[4]) || 0;
 
-    const message = await getRankMessage(env.DB, guildId, period, page);
+    let monthContext: MonthContext | undefined;
+    if (period === "monthly" && year > 0 && month > 0) {
+      monthContext = { year, month };
+    }
+
+    const message = await getRankMessage(env.DB, guildId, period, page, monthContext);
 
     return {
       type: InteractionResponseType.UpdateMessage,

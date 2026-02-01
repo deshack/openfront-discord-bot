@@ -1,9 +1,11 @@
 import { ButtonStyle, ComponentType } from "discord-api-types/v10";
 import { MessageData } from "../structures/message";
 import {
-  getEndOfCurrentMonth,
+  getEndOfMonth,
   getLeaderboard,
+  isCurrentMonth,
   LeaderboardPeriod,
+  MonthContext,
 } from "../util/stats";
 import { dateToDiscordTimestamp, TimestampStyles } from "../util/date_format";
 
@@ -14,6 +16,7 @@ export async function getRankMessage(
   guildId: string,
   period: LeaderboardPeriod,
   page: number,
+  monthContext?: MonthContext,
 ): Promise<MessageData> {
   const offset = page * RANK_PAGE_ENTRIES;
   const result = await getLeaderboard(
@@ -22,12 +25,13 @@ export async function getRankMessage(
     period,
     RANK_PAGE_ENTRIES,
     offset,
+    monthContext,
   );
 
   const totalPages = Math.max(1, Math.ceil(result.totalCount / RANK_PAGE_ENTRIES));
   const isLastPage = page >= totalPages - 1;
 
-  const periodTitle = period === "monthly" ? getCurrentMonthName() : "All Time";
+  const periodTitle = period === "monthly" ? getMonthName(monthContext) : "All Time";
   const title = `Clan Leaderboard - ${periodTitle}`;
 
   let description: string;
@@ -47,18 +51,25 @@ export async function getRankMessage(
 
   let footer: string;
   if (period === "monthly") {
-    const endOfMonth = getEndOfCurrentMonth();
-    const timestamp = dateToDiscordTimestamp(endOfMonth, TimestampStyles.RelativeTime);
-    footer = `Season ends ${timestamp}`;
+    if (isCurrentMonth(monthContext)) {
+      const endOfMonth = getEndOfMonth(monthContext);
+      const timestamp = dateToDiscordTimestamp(endOfMonth, TimestampStyles.RelativeTime);
+      footer = `Season ends ${timestamp}`;
+    } else {
+      footer = "Past season standings";
+    }
   } else {
     footer = "All-time standings";
   }
+
+  const year = monthContext?.year ?? 0;
+  const month = monthContext?.month ?? 0;
 
   const backButton = {
     type: ComponentType.Button as const,
     emoji: { name: "\u2b05\ufe0f" },
     style: ButtonStyle.Primary as ButtonStyle.Primary,
-    custom_id: page === 0 ? `rank-${period}-0` : `rank-${period}-${page - 1}`,
+    custom_id: page === 0 ? `rank|${period}|${year}|${month}|0` : `rank|${period}|${year}|${month}|${page - 1}`,
     disabled: page === 0,
   };
 
@@ -74,7 +85,7 @@ export async function getRankMessage(
     type: ComponentType.Button as const,
     emoji: { name: "\u27a1\ufe0f" },
     style: ButtonStyle.Primary as ButtonStyle.Primary,
-    custom_id: isLastPage ? `rank-${period}-${page}` : `rank-${period}-${page + 1}`,
+    custom_id: isLastPage ? `rank|${period}|${year}|${month}|${page}` : `rank|${period}|${year}|${month}|${page + 1}`,
     disabled: isLastPage,
   };
 
@@ -96,14 +107,17 @@ export async function getRankMessage(
   };
 }
 
-function getCurrentMonthName(): string {
-  const now = new Date();
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
-  ];
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
 
-  return `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+function getMonthName(context?: MonthContext): string {
+  const now = new Date();
+  const year = context?.year ?? now.getUTCFullYear();
+  const month = context?.month ?? now.getUTCMonth() + 1;
+
+  return `${MONTH_NAMES[month - 1]} ${year}`;
 }
 
 function getMedal(rank: number): string {
