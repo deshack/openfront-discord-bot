@@ -76,6 +76,8 @@ export async function handleScanJobs(env: Env): Promise<void> {
     console.error(`Error processing scan job ${job.id}:`, error);
 
     await failScanJob(env.DB, job.id, errorMessage);
+
+    throw error;
   }
 }
 
