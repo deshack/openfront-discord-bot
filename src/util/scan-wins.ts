@@ -1,6 +1,14 @@
 import { GameMode, GameType } from "./api_schemas";
 import { getClanSessions, getGameInfo, getPlayerSessions } from "./api_util";
-import { listPlayerRegistrationsByGuild } from "./db";
+import {
+  initializeScanJobClanGames,
+  initializeScanJobFFAPlayers,
+  listPlayerRegistrationsByGuild,
+  ScanJob,
+  updateScanJobClanProgress,
+  updateScanJobFFAProgress,
+  updateScanJobStatus,
+} from "./db";
 import { recordPlayerWin } from "./stats";
 
 export interface ScanResult {
@@ -9,125 +17,133 @@ export interface ScanResult {
   ffaWinsProcessed: number;
 }
 
+const BATCH_SIZE = 30;
 const DELAY_BETWEEN_API_CALLS_MS = 100;
 
 async function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function scanHistoricalWins(
+export async function initializeScanJob(
   db: D1Database,
-  guildId: string,
-  clanTag: string | null,
-  startDate: string,
-  endDate: string,
-): Promise<ScanResult> {
-  const result: ScanResult = {
-    clanWinsProcessed: 0,
-    clanPlayersRecorded: 0,
-    ffaWinsProcessed: 0,
-  };
+  job: ScanJob,
+): Promise<void> {
+  if (job.clanTag) {
+    const sessionsData = await getClanSessions(
+      job.clanTag,
+      job.startDate,
+      job.endDate,
+    );
 
-  if (clanTag) {
-    const clanResult = await scanClanWins(db, guildId, clanTag, startDate, endDate);
-    result.clanWinsProcessed = clanResult.winsProcessed;
-    result.clanPlayersRecorded = clanResult.playersRecorded;
+    if (sessionsData) {
+      const winningGameIds = sessionsData.data
+        .filter((session) => session.hasWon)
+        .map((session) => session.gameId);
+
+      await initializeScanJobClanGames(db, job.id, winningGameIds);
+
+      return;
+    }
   }
 
-  const ffaResult = await scanFFAWins(db, guildId, startDate, endDate);
-  result.ffaWinsProcessed = ffaResult.winsProcessed;
+  const registrations = await listPlayerRegistrationsByGuild(db, job.guildId);
+  const playerIds = registrations.map((r) => r.playerId);
 
-  return result;
+  if (playerIds.length > 0) {
+    await initializeScanJobFFAPlayers(db, job.id, playerIds);
+  } else {
+    await updateScanJobStatus(db, job.id, "completed");
+  }
 }
 
-interface ClanScanResult {
-  winsProcessed: number;
+export interface ClanBatchResult {
+  hasMore: boolean;
+  gamesProcessed: number;
   playersRecorded: number;
 }
 
-async function scanClanWins(
+export async function processClanBatch(
   db: D1Database,
-  guildId: string,
-  clanTag: string,
-  startDate: string,
-  endDate: string,
-): Promise<ClanScanResult> {
-  const result: ClanScanResult = {
-    winsProcessed: 0,
-    playersRecorded: 0,
-  };
-
-  const sessionsData = await getClanSessions(clanTag, startDate, endDate);
-  if (!sessionsData) {
-    return result;
+  job: ScanJob,
+): Promise<ClanBatchResult> {
+  if (!job.clanGames || !job.clanTag) {
+    return { hasMore: false, gamesProcessed: 0, playersRecorded: 0 };
   }
 
-  const wins = sessionsData.data.filter((session) => session.hasWon);
+  const startIndex = job.clanGamesProcessed;
+  const endIndex = Math.min(startIndex + BATCH_SIZE, job.clanGames.length);
+  const gamesToProcess = job.clanGames.slice(startIndex, endIndex);
 
-  for (const win of wins) {
+  let playersRecorded = job.clanPlayersRecorded;
+
+  for (const gameId of gamesToProcess) {
     await delay(DELAY_BETWEEN_API_CALLS_MS);
 
-    const gameInfoData = await getGameInfo(win.gameId, { includeTurns: false });
+    const gameInfoData = await getGameInfo(gameId, { includeTurns: false });
     if (!gameInfoData) {
       continue;
     }
 
-    const clanPlayers = gameInfoData.data.info.players.filter(
-      (player) => player.clanTag === clanTag,
+    const gameInfo = gameInfoData.data.info;
+    const clanPlayers = gameInfo.players.filter(
+      (player) => player.clanTag === job.clanTag,
     );
 
     for (const player of clanPlayers) {
+      const winnerScore = player.stats.gold?.[0] ?? 0;
+
       await recordPlayerWin(
         db,
-        guildId,
+        job.guildId,
         player.username,
-        win.gameId,
-        win.score,
-        win.gameStart,
+        gameId,
+        winnerScore,
+        gameInfo.start.toISOString(),
       );
-      result.playersRecorded++;
+      playersRecorded++;
     }
-
-    result.winsProcessed++;
   }
 
-  return result;
+  const gamesProcessed = endIndex;
+  await updateScanJobClanProgress(db, job.id, gamesProcessed, playersRecorded);
+
+  const hasMore = endIndex < job.clanGames.length;
+
+  return { hasMore, gamesProcessed: gamesToProcess.length, playersRecorded };
 }
 
-interface FFAScanResult {
+export interface FFABatchResult {
+  hasMore: boolean;
   winsProcessed: number;
 }
 
-async function scanFFAWins(
+export async function processFFABatch(
   db: D1Database,
-  guildId: string,
-  startDate: string,
-  endDate: string,
-): Promise<FFAScanResult> {
-  const result: FFAScanResult = {
-    winsProcessed: 0,
-  };
-
-  const registrations = await listPlayerRegistrationsByGuild(db, guildId);
-  if (registrations.length === 0) {
-    return result;
+  job: ScanJob,
+): Promise<FFABatchResult> {
+  if (!job.ffaPlayerIds || job.ffaPlayerIds.length === 0) {
+    return { hasMore: false, winsProcessed: 0 };
   }
 
-  const processedGames = new Set<string>();
+  const currentPlayerIndex = job.ffaPlayerIndex;
 
-  for (const registration of registrations) {
-    await delay(DELAY_BETWEEN_API_CALLS_MS);
+  if (currentPlayerIndex >= job.ffaPlayerIds.length) {
+    return { hasMore: false, winsProcessed: 0 };
+  }
 
-    const sessionsData = await getPlayerSessions(
-      registration.playerId,
-      startDate,
-      endDate,
-    );
+  const playerId = job.ffaPlayerIds[currentPlayerIndex];
+  let totalWinsProcessed = job.ffaWinsProcessed;
+  let winsInThisBatch = 0;
 
-    if (!sessionsData) {
-      continue;
-    }
+  await delay(DELAY_BETWEEN_API_CALLS_MS);
 
+  const sessionsData = await getPlayerSessions(
+    playerId,
+    job.startDate,
+    job.endDate,
+  );
+
+  if (sessionsData) {
     const ffaWins = sessionsData.data.filter(
       (session) =>
         session.hasWon &&
@@ -135,12 +151,9 @@ async function scanFFAWins(
         session.gameMode === GameMode.FFA,
     );
 
-    for (const win of ffaWins) {
-      const gameKey = `${registration.playerId}:${win.gameId}`;
-      if (processedGames.has(gameKey)) {
-        continue;
-      }
+    const winsToProcess = ffaWins.slice(0, BATCH_SIZE);
 
+    for (const win of winsToProcess) {
       await delay(DELAY_BETWEEN_API_CALLS_MS);
 
       const gameInfoData = await getGameInfo(win.gameId, { includeTurns: false });
@@ -167,17 +180,38 @@ async function scanFFAWins(
 
       await recordPlayerWin(
         db,
-        guildId,
+        job.guildId,
         winnerPlayer.username,
         win.gameId,
         winnerScore,
         gameInfo.start.toISOString(),
       );
 
-      processedGames.add(gameKey);
-      result.winsProcessed++;
+      totalWinsProcessed++;
+      winsInThisBatch++;
     }
   }
 
-  return result;
+  const nextPlayerIndex = currentPlayerIndex + 1;
+  await updateScanJobFFAProgress(db, job.id, nextPlayerIndex, totalWinsProcessed);
+
+  const hasMore = nextPlayerIndex < job.ffaPlayerIds.length;
+
+  return { hasMore, winsProcessed: winsInThisBatch };
+}
+
+export async function transitionToFFAProcessing(
+  db: D1Database,
+  job: ScanJob,
+): Promise<boolean> {
+  const registrations = await listPlayerRegistrationsByGuild(db, job.guildId);
+  const playerIds = registrations.map((r) => r.playerId);
+
+  if (playerIds.length === 0) {
+    return false;
+  }
+
+  await initializeScanJobFFAPlayers(db, job.id, playerIds);
+
+  return true;
 }

@@ -192,3 +192,312 @@ export async function listAllPlayerRegistrations(
     registrations,
   }));
 }
+
+// ========== Scan Jobs ==========
+
+export type ScanJobStatus =
+  | "pending"
+  | "processing_clan"
+  | "processing_ffa"
+  | "completed"
+  | "failed";
+
+export interface ScanJob {
+  id: number;
+  guildId: string;
+  channelId: string;
+  clanTag: string | null;
+  startDate: string;
+  endDate: string;
+  status: ScanJobStatus;
+  createdAt: number;
+  startedAt: number | null;
+  completedAt: number | null;
+  clanGames: string[] | null;
+  clanGamesProcessed: number;
+  clanPlayersRecorded: number;
+  ffaPlayerIds: string[] | null;
+  ffaPlayerIndex: number;
+  ffaWinsProcessed: number;
+  errorMessage: string | null;
+}
+
+interface ScanJobRow {
+  id: number;
+  guild_id: string;
+  channel_id: string;
+  clan_tag: string | null;
+  start_date: string;
+  end_date: string;
+  status: string;
+  created_at: number;
+  started_at: number | null;
+  completed_at: number | null;
+  clan_games: string | null;
+  clan_games_processed: number;
+  clan_players_recorded: number;
+  ffa_player_ids: string | null;
+  ffa_player_index: number;
+  ffa_wins_processed: number;
+  error_message: string | null;
+}
+
+function rowToScanJob(row: ScanJobRow): ScanJob {
+  return {
+    id: row.id,
+    guildId: row.guild_id,
+    channelId: row.channel_id,
+    clanTag: row.clan_tag,
+    startDate: row.start_date,
+    endDate: row.end_date,
+    status: row.status as ScanJobStatus,
+    createdAt: row.created_at,
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
+    clanGames: row.clan_games ? JSON.parse(row.clan_games) : null,
+    clanGamesProcessed: row.clan_games_processed,
+    clanPlayersRecorded: row.clan_players_recorded,
+    ffaPlayerIds: row.ffa_player_ids ? JSON.parse(row.ffa_player_ids) : null,
+    ffaPlayerIndex: row.ffa_player_index,
+    ffaWinsProcessed: row.ffa_wins_processed,
+    errorMessage: row.error_message,
+  };
+}
+
+export async function createScanJob(
+  db: D1Database,
+  guildId: string,
+  channelId: string,
+  clanTag: string | null,
+  startDate: string,
+  endDate: string,
+): Promise<number> {
+  const result = await db
+    .prepare(
+      `INSERT INTO scan_jobs (guild_id, channel_id, clan_tag, start_date, end_date)
+       VALUES (?, ?, ?, ?, ?)`,
+    )
+    .bind(guildId, channelId, clanTag, startDate, endDate)
+    .run();
+
+  return result.meta.last_row_id as number;
+}
+
+/**
+ * Atomically creates a scan job only if no active job exists for the guild.
+ * This prevents TOCTOU race conditions where concurrent requests could create duplicate jobs.
+ * @returns The new job ID if created, or null if an active job already exists.
+ */
+export async function tryCreateScanJob(
+  db: D1Database,
+  guildId: string,
+  channelId: string,
+  clanTag: string | null,
+  startDate: string,
+  endDate: string,
+): Promise<number | null> {
+  const result = await db
+    .prepare(
+      `INSERT INTO scan_jobs (guild_id, channel_id, clan_tag, start_date, end_date)
+       SELECT ?, ?, ?, ?, ?
+       WHERE NOT EXISTS (
+         SELECT 1 FROM scan_jobs
+         WHERE guild_id = ? AND status IN ('pending', 'processing_clan', 'processing_ffa')
+       )`,
+    )
+    .bind(guildId, channelId, clanTag, startDate, endDate, guildId)
+    .run();
+
+  if (result.meta.changes === 0) {
+    return null;
+  }
+
+  return result.meta.last_row_id as number;
+}
+
+export async function getActiveScanJobForGuild(
+  db: D1Database,
+  guildId: string,
+): Promise<ScanJob | null> {
+  const row = await db
+    .prepare(
+      `SELECT * FROM scan_jobs
+       WHERE guild_id = ? AND status IN ('pending', 'processing_clan', 'processing_ffa')
+       ORDER BY created_at DESC
+       LIMIT 1`,
+    )
+    .bind(guildId)
+    .first<ScanJobRow>();
+
+  if (!row) {
+    return null;
+  }
+
+  return rowToScanJob(row);
+}
+
+export async function getNextPendingJob(db: D1Database): Promise<ScanJob | null> {
+  const row = await db
+    .prepare(
+      `SELECT * FROM scan_jobs
+       WHERE status IN ('pending', 'processing_clan', 'processing_ffa')
+       ORDER BY created_at ASC
+       LIMIT 1`,
+    )
+    .first<ScanJobRow>();
+
+  if (!row) {
+    return null;
+  }
+
+  return rowToScanJob(row);
+}
+
+const STALE_THRESHOLD_SECONDS = 300;
+
+/**
+ * Atomically claims the next scan job for processing.
+ * This prevents race conditions where multiple workers could claim the same job.
+ *
+ * For 'pending' jobs: claims by setting started_at (WHERE started_at IS NULL or stale)
+ * For 'processing_*' jobs: claims if the job appears stale (started_at > 5 min ago)
+ *
+ * @returns The claimed job, or null if no job is available or claim failed.
+ */
+export async function claimNextPendingJob(db: D1Database): Promise<ScanJob | null> {
+  const pendingResult = await db
+    .prepare(
+      `UPDATE scan_jobs
+       SET started_at = unixepoch()
+       WHERE id = (
+         SELECT id FROM scan_jobs
+         WHERE status = 'pending'
+           AND (started_at IS NULL OR (unixepoch() - started_at) > ?)
+         ORDER BY created_at ASC
+         LIMIT 1
+       ) AND status = 'pending'
+       RETURNING *`,
+    )
+    .bind(STALE_THRESHOLD_SECONDS)
+    .first<ScanJobRow>();
+
+  if (pendingResult) {
+    return rowToScanJob(pendingResult);
+  }
+
+  const processingResult = await db
+    .prepare(
+      `UPDATE scan_jobs
+       SET started_at = unixepoch()
+       WHERE id = (
+         SELECT id FROM scan_jobs
+         WHERE status IN ('processing_clan', 'processing_ffa')
+           AND (unixepoch() - COALESCE(started_at, 0)) > ?
+         ORDER BY created_at ASC
+         LIMIT 1
+       ) AND status IN ('processing_clan', 'processing_ffa')
+       RETURNING *`,
+    )
+    .bind(STALE_THRESHOLD_SECONDS)
+    .first<ScanJobRow>();
+
+  if (processingResult) {
+    return rowToScanJob(processingResult);
+  }
+
+  return null;
+}
+
+export async function updateScanJobStatus(
+  db: D1Database,
+  jobId: number,
+  status: ScanJobStatus,
+): Promise<void> {
+  if (status === "processing_clan") {
+    await db
+      .prepare(
+        `UPDATE scan_jobs SET status = ?, started_at = unixepoch() WHERE id = ?`,
+      )
+      .bind(status, jobId)
+      .run();
+  } else {
+    await db
+      .prepare(`UPDATE scan_jobs SET status = ? WHERE id = ?`)
+      .bind(status, jobId)
+      .run();
+  }
+}
+
+export async function initializeScanJobClanGames(
+  db: D1Database,
+  jobId: number,
+  clanGames: string[],
+): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE scan_jobs SET clan_games = ?, status = 'processing_clan', started_at = unixepoch() WHERE id = ?`,
+    )
+    .bind(JSON.stringify(clanGames), jobId)
+    .run();
+}
+
+export async function initializeScanJobFFAPlayers(
+  db: D1Database,
+  jobId: number,
+  ffaPlayerIds: string[],
+): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE scan_jobs SET ffa_player_ids = ?, status = 'processing_ffa', started_at = unixepoch() WHERE id = ?`
+    )
+    .bind(JSON.stringify(ffaPlayerIds), jobId)
+    .run();
+}
+
+export async function updateScanJobClanProgress(
+  db: D1Database,
+  jobId: number,
+  gamesProcessed: number,
+  playersRecorded: number,
+): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE scan_jobs SET clan_games_processed = ?, clan_players_recorded = ? WHERE id = ?`,
+    )
+    .bind(gamesProcessed, playersRecorded, jobId)
+    .run();
+}
+
+export async function updateScanJobFFAProgress(
+  db: D1Database,
+  jobId: number,
+  playerIndex: number,
+  winsProcessed: number,
+): Promise<void> {
+  await db
+    .prepare(`UPDATE scan_jobs SET ffa_player_index = ?, ffa_wins_processed = ? WHERE id = ?`)
+    .bind(playerIndex, winsProcessed, jobId)
+    .run();
+}
+
+export async function completeScanJob(db: D1Database, jobId: number): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE scan_jobs SET status = 'completed', completed_at = unixepoch() WHERE id = ?`,
+    )
+    .bind(jobId)
+    .run();
+}
+
+export async function failScanJob(
+  db: D1Database,
+  jobId: number,
+  errorMessage: string,
+): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE scan_jobs SET status = 'failed', completed_at = unixepoch(), error_message = ? WHERE id = ?`,
+    )
+    .bind(errorMessage, jobId)
+    .run();
+}
