@@ -360,9 +360,12 @@ export async function initializeScanJobFFAPlayers(
   ffaPlayerIds: string[],
 ): Promise<void> {
   await db
-    .prepare(`UPDATE scan_jobs SET ffa_player_ids = ?, status = 'processing_ffa' WHERE id = ?`)
+    .prepare(
+      `UPDATE scan_jobs SET ffa_player_ids = ?, status = 'processing_ffa', started_at = unixepoch() WHERE id = ?`
+    )
     .bind(JSON.stringify(ffaPlayerIds), jobId)
     .run();
+}
 }
 
 export async function updateScanJobClanProgress(
