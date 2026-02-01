@@ -366,7 +366,6 @@ export async function initializeScanJobFFAPlayers(
     .bind(JSON.stringify(ffaPlayerIds), jobId)
     .run();
 }
-}
 
 export async function updateScanJobClanProgress(
   db: D1Database,
