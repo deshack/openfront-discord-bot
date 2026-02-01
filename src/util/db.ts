@@ -361,12 +361,12 @@ export async function getClanSessionsJobBatch(
        SET status = 'processing', started_at = unixepoch()
        WHERE game_id IN (
          SELECT game_id FROM scan_job_clan_sessions
-         WHERE job_id = ?
+         WHERE scan_job_id = ?
            AND (status = 'pending'
            OR (unixepoch() - COALESCE(started_at, 0)) > ?)
          ORDER BY game_id ASC
          LIMIT 50
-       ) AND job_id = ?
+       ) AND scan_job_id = ?
        AND (status = 'pending' OR (unixepoch() - COALESCE(started_at, 0)) > ?)
        RETURNING *`,
     )
@@ -383,7 +383,7 @@ export async function completeClanSessionJob(
 ): Promise<void> {
   await db
     .prepare(
-      `UPDATE scan_job_clan_sessions SET status = ?, completed_at = unixepoch() WHERE job_id = ? AND game_id = ?`,
+      `UPDATE scan_job_clan_sessions SET status = ?, completed_at = unixepoch() WHERE scan_job_id = ? AND game_id = ?`,
     )
     .bind("completed", jobId, gameId)
     .run();
@@ -395,7 +395,7 @@ export async function countPendingClanSessionJobs(
 ): Promise<number | null> {
   return await db
     .prepare(
-      `SELECT COUNT(*) FROM scan_job_clan_sessions WHERE job_id = ? and status IN ('pending', 'processing')`,
+      `SELECT COUNT(*) FROM scan_job_clan_sessions WHERE scan_job_id = ? and status IN ('pending', 'processing')`,
     )
     .bind(jobId)
     .first<number>();
