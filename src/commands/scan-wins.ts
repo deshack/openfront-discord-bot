@@ -45,7 +45,6 @@ async function followUp(
     throw new Error(`Discord follow-up failed: ${res.status} ${text}`);
   }
 }
-}
 
 async function runScan(
   env: Env,
