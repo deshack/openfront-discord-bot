@@ -9,7 +9,11 @@ import { Env } from "./types/env";
 import { verifyDiscordRequest } from "./util/verify";
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
     if (request.method !== "POST") {
       return new Response("Method not allowed", { status: 405 });
     }
@@ -29,7 +33,9 @@ export default {
       return Response.json({ type: InteractionResponseType.Pong });
     }
 
-    const response = await handleInteraction(interaction, env);
+    const response = await handleInteraction(interaction, env, {
+      waitUntil: (promise) => ctx.waitUntil(promise),
+    });
 
     return Response.json(response);
   },
