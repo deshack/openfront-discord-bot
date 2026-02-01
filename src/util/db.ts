@@ -301,7 +301,6 @@ export async function createScanJobClanSession(
     .bind(scanJobId, gameId, score)
     .run();
 }
-const STALE_THRESHOLD_SECONDS = 300;
 
 /**
  * Atomically claims the next scan job for processing.
@@ -337,11 +336,9 @@ export async function claimNextPendingJob(
     .prepare(
       `SELECT * FROM scan_jobs
        WHERE status = 'processing'
-         OR (unixepoch() - COALESCE(started_at, 0)) > ?
        ORDER BY created_at ASC
          LIMIT 1`,
     )
-    .bind(STALE_THRESHOLD_SECONDS)
     .first<ScanJobRow>();
 
   if (processingResult) {
@@ -362,15 +359,14 @@ export async function getClanSessionsJobBatch(
        WHERE game_id IN (
          SELECT game_id FROM scan_job_clan_sessions
          WHERE scan_job_id = ?
-           AND (status = 'pending'
-           OR (unixepoch() - COALESCE(started_at, 0)) > ?)
+           AND status = 'pending'
          ORDER BY game_id ASC
          LIMIT 50
        ) AND scan_job_id = ?
-       AND (status = 'pending' OR (unixepoch() - COALESCE(started_at, 0)) > ?)
+       AND status = 'pending'
        RETURNING *`,
     )
-    .bind(jobId, STALE_THRESHOLD_SECONDS, jobId, STALE_THRESHOLD_SECONDS)
+    .bind(jobId, jobId)
     .run<ScanJobClanSessionRow>();
 
   return pendingResult.results.map(rowToScanJobClanSession);
