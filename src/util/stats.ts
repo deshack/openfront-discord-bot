@@ -1,5 +1,10 @@
 export type LeaderboardPeriod = "monthly" | "all_time";
 
+export interface MonthContext {
+  year: number;
+  month: number;
+}
+
 export interface LeaderboardEntry {
   username: string;
   wins: number;
@@ -27,17 +32,36 @@ interface CountRow {
   count: number;
 }
 
-function getStartOfCurrentMonth(): number {
+export function getMonthTimestampRange(context?: MonthContext): { start: number; end: number } {
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  const year = context?.year ?? now.getUTCFullYear();
+  const month = context?.month ?? now.getUTCMonth() + 1;
 
-  return Math.floor(startOfMonth.getTime() / 1000);
+  const startOfMonth = Date.UTC(year, month - 1, 1, 0, 0, 0, 0);
+  const endOfMonth = Date.UTC(year, month, 1, 0, 0, 0, 0);
+
+  return {
+    start: Math.floor(startOfMonth / 1000),
+    end: Math.floor(endOfMonth / 1000),
+  };
 }
 
-export function getEndOfCurrentMonth(): Date {
+export function isCurrentMonth(context?: MonthContext): boolean {
+  if (!context) {
+    return true;
+  }
+
   const now = new Date();
 
-  return new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
+  return context.year === now.getUTCFullYear() && context.month === now.getUTCMonth() + 1;
+}
+
+export function getEndOfMonth(context?: MonthContext): Date {
+  const now = new Date();
+  const year = context?.year ?? now.getUTCFullYear();
+  const month = context?.month ?? now.getUTCMonth() + 1;
+
+  return new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
 }
 
 export async function recordPlayerWin(
@@ -66,35 +90,92 @@ export async function getLeaderboard(
   period: LeaderboardPeriod,
   limit: number,
   offset: number,
+  monthContext?: MonthContext,
 ): Promise<LeaderboardResult> {
-  const startTimestamp = period === "monthly" ? getStartOfCurrentMonth() : 0;
+  if (period === "all_time") {
+    const countResult = await db
+      .prepare(
+        `SELECT COUNT(DISTINCT username) as count
+         FROM player_stats
+         WHERE guild_id = ?`,
+      )
+      .bind(guildId)
+      .first<CountRow>();
+
+    const totalCount = countResult?.count ?? 0;
+
+    const { results } = await db
+      .prepare(
+        `SELECT
+           username,
+           COUNT(*) as wins,
+           SUM(score) as total_score
+         FROM player_stats
+         WHERE guild_id = ?
+         GROUP BY guild_id, username
+         ORDER BY wins DESC, total_score DESC
+         LIMIT ? OFFSET ?`,
+      )
+      .bind(guildId, limit, offset)
+      .all<LeaderboardRow>();
+
+    return {
+      entries: results.map((row) => ({
+        username: row.username,
+        wins: row.wins,
+        totalScore: row.total_score,
+      })),
+      totalCount,
+    };
+  }
+
+  const { start, end } = getMonthTimestampRange(monthContext);
+  const isPastMonth = !isCurrentMonth(monthContext);
 
   const countResult = await db
     .prepare(
-      `SELECT COUNT(DISTINCT username) as count
-       FROM player_stats
-       WHERE guild_id = ?
-         AND game_start >= ?`,
+      isPastMonth
+        ? `SELECT COUNT(DISTINCT username) as count
+           FROM player_stats
+           WHERE guild_id = ?
+             AND game_start >= ?
+             AND game_start < ?`
+        : `SELECT COUNT(DISTINCT username) as count
+           FROM player_stats
+           WHERE guild_id = ?
+             AND game_start >= ?`,
     )
-    .bind(guildId, startTimestamp)
+    .bind(...(isPastMonth ? [guildId, start, end] : [guildId, start]))
     .first<CountRow>();
 
   const totalCount = countResult?.count ?? 0;
 
   const { results } = await db
     .prepare(
-      `SELECT
-         username,
-         COUNT(*) as wins,
-         SUM(score) as total_score
-       FROM player_stats
-       WHERE guild_id = ?
-         AND game_start >= ?
-       GROUP BY guild_id, username
-       ORDER BY wins DESC, total_score DESC
-       LIMIT ? OFFSET ?`,
+      isPastMonth
+        ? `SELECT
+             username,
+             COUNT(*) as wins,
+             SUM(score) as total_score
+           FROM player_stats
+           WHERE guild_id = ?
+             AND game_start >= ?
+             AND game_start < ?
+           GROUP BY guild_id, username
+           ORDER BY wins DESC, total_score DESC
+           LIMIT ? OFFSET ?`
+        : `SELECT
+             username,
+             COUNT(*) as wins,
+             SUM(score) as total_score
+           FROM player_stats
+           WHERE guild_id = ?
+             AND game_start >= ?
+           GROUP BY guild_id, username
+           ORDER BY wins DESC, total_score DESC
+           LIMIT ? OFFSET ?`,
     )
-    .bind(guildId, startTimestamp, limit, offset)
+    .bind(...(isPastMonth ? [guildId, start, end, limit, offset] : [guildId, start, limit, offset]))
     .all<LeaderboardRow>();
 
   return {
@@ -113,7 +194,7 @@ export async function getPlayerRank(
   username: string,
   period: LeaderboardPeriod,
 ): Promise<PlayerRank | null> {
-  const startTimestamp = period === "monthly" ? getStartOfCurrentMonth() : 0;
+  const startTimestamp = period === "monthly" ? getMonthTimestampRange().start : 0;
 
   const playerStats = await db
     .prepare(
