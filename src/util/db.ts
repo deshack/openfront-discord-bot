@@ -283,6 +283,38 @@ export async function createScanJob(
   return result.meta.last_row_id as number;
 }
 
+/**
+ * Atomically creates a scan job only if no active job exists for the guild.
+ * This prevents TOCTOU race conditions where concurrent requests could create duplicate jobs.
+ * @returns The new job ID if created, or null if an active job already exists.
+ */
+export async function tryCreateScanJob(
+  db: D1Database,
+  guildId: string,
+  channelId: string,
+  clanTag: string | null,
+  startDate: string,
+  endDate: string,
+): Promise<number | null> {
+  const result = await db
+    .prepare(
+      `INSERT INTO scan_jobs (guild_id, channel_id, clan_tag, start_date, end_date)
+       SELECT ?, ?, ?, ?, ?
+       WHERE NOT EXISTS (
+         SELECT 1 FROM scan_jobs
+         WHERE guild_id = ? AND status IN ('pending', 'processing_clan', 'processing_ffa')
+       )`,
+    )
+    .bind(guildId, channelId, clanTag, startDate, endDate, guildId)
+    .run();
+
+  if (result.meta.changes === 0) {
+    return null;
+  }
+
+  return result.meta.last_row_id as number;
+}
+
 export async function getActiveScanJobForGuild(
   db: D1Database,
   guildId: string,

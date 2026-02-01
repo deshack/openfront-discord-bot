@@ -7,11 +7,7 @@ import {
   PermissionFlagsBits,
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
-import {
-  createScanJob,
-  getActiveScanJobForGuild,
-  getGuildConfig,
-} from "../util/db";
+import { tryCreateScanJob, getGuildConfig } from "../util/db";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -104,8 +100,20 @@ const command: CommandHandler = {
       };
     }
 
-    const existingJob = await getActiveScanJobForGuild(env.DB, guildId);
-    if (existingJob) {
+    const guildConfig = await getGuildConfig(env.DB, guildId);
+    const clanTag = guildConfig?.clanTag ?? null;
+    const channelId = interaction.channel?.id ?? interaction.channel_id ?? "";
+
+    const jobId = await tryCreateScanJob(
+      env.DB,
+      guildId,
+      channelId,
+      clanTag,
+      startDate.toISOString(),
+      endDate.toISOString(),
+    );
+
+    if (jobId === null) {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
@@ -115,19 +123,6 @@ const command: CommandHandler = {
         },
       };
     }
-
-    const guildConfig = await getGuildConfig(env.DB, guildId);
-    const clanTag = guildConfig?.clanTag ?? null;
-    const channelId = interaction.channel?.id ?? interaction.channel_id ?? "";
-
-    await createScanJob(
-      env.DB,
-      guildId,
-      channelId,
-      clanTag,
-      startDate.toISOString(),
-      endDate.toISOString(),
-    );
 
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
