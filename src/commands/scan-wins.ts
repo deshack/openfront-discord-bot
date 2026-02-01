@@ -102,7 +102,17 @@ const command: CommandHandler = {
 
     const guildConfig = await getGuildConfig(env.DB, guildId);
     const clanTag = guildConfig?.clanTag ?? null;
-    const channelId = interaction.channel?.id ?? interaction.channel_id ?? "";
+    const channelId = interaction.channel?.id ?? interaction.channel_id;
+
+    if (!channelId) {
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: "Unable to determine the channel for this command. Please try again.",
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
 
     const jobId = await tryCreateScanJob(
       env.DB,
