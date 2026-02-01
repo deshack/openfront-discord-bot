@@ -6,9 +6,13 @@ import {
 } from "discord-api-types/v10";
 import { getClanLeaderboardMessage } from "../messages/clan_leaderboard";
 import { getPublicFFALeaderboardMessage } from "../messages/public_ffa_leaderboard";
+import { getRankMessage } from "../messages/rank";
+import { Env } from "../types/env";
+import { LeaderboardPeriod } from "../util/stats";
 
 export async function handleButton(
   interaction: APIMessageComponentInteraction,
+  env: Env,
 ): Promise<APIInteractionResponse> {
   const customId = interaction.data.custom_id;
 
@@ -45,6 +49,30 @@ export async function handleButton(
         },
       };
     }
+
+    return {
+      type: InteractionResponseType.UpdateMessage,
+      data: message,
+    };
+  }
+
+  if (customId.startsWith("rank-")) {
+    const guildId = interaction.guild_id;
+    if (!guildId) {
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: "This feature can only be used in a server.",
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
+
+    const parts = customId.split("-");
+    const period = parts[1] as LeaderboardPeriod;
+    const page = parseInt(parts[2]);
+
+    const message = await getRankMessage(env.DB, guildId, period, page);
 
     return {
       type: InteractionResponseType.UpdateMessage,

@@ -15,6 +15,8 @@ import {
   markFFAGamePosted,
   markGamePosted,
 } from "../util/kv";
+import { checkPremiumForScheduled } from "../util/premium";
+import { recordPlayerWin } from "../util/stats";
 
 export async function handleScheduled(env: Env): Promise<void> {
   await Promise.all([handleClanWins(env), handleFFAWins(env)]);
@@ -76,6 +78,27 @@ async function handleClanWins(env: Env): Promise<void> {
 
         if (success) {
           await markGamePosted(env.DATA, guildId, win.gameId);
+
+          const premiumStatus = await checkPremiumForScheduled(
+            env.DB,
+            env.DISCORD_TOKEN,
+            env.DISCORD_CLIENT_ID,
+            env.DISCORD_SKU_ID,
+            guildId,
+          );
+
+          if (premiumStatus.isPremium && clanPlayerUsernames.length > 0) {
+            for (const username of clanPlayerUsernames) {
+              await recordPlayerWin(
+                env.DB,
+                guildId,
+                username,
+                win.gameId,
+                win.score,
+                win.gameStart,
+              );
+            }
+          }
         }
       }
     } catch (error) {
@@ -222,6 +245,38 @@ async function handleFFAWins(env: Env): Promise<void> {
 
       if (success) {
         await markFFAGamePosted(env.DATA, win.guildId, win.playerId, win.gameId);
+
+        const gameInfo = gameInfoData?.data.info;
+        const isNot1v1 = gameInfo && gameInfo.players.length > 2;
+
+        if (isNot1v1 && gameInfo.winner) {
+          const premiumStatus = await checkPremiumForScheduled(
+            env.DB,
+            env.DISCORD_TOKEN,
+            env.DISCORD_CLIENT_ID,
+            env.DISCORD_SKU_ID,
+            win.guildId,
+          );
+
+          if (premiumStatus.isPremium) {
+            const winnerPlayer = gameInfo.players.find(
+              (p) => p.clientID === gameInfo.winner?.clientID,
+            );
+
+            if (winnerPlayer) {
+              const winnerScore = winnerPlayer.stats.gold?.[0] ?? 0;
+
+              await recordPlayerWin(
+                env.DB,
+                win.guildId,
+                winnerPlayer.username,
+                win.gameId,
+                winnerScore,
+                gameInfo.start.toISOString(),
+              );
+            }
+          }
+        }
       }
     } catch (error) {
       console.error(

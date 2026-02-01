@@ -7,6 +7,7 @@ import {
   InteractionType,
   MessageFlags,
 } from "discord-api-types/v10";
+import { CommandContext } from "../structures/command";
 import { Env } from "../types/env";
 import { handleButton } from "./buttons";
 import { handleCommand } from "./commands";
@@ -14,16 +15,18 @@ import { handleCommand } from "./commands";
 export async function handleInteraction(
   interaction: APIInteraction,
   env: Env,
+  ctx?: CommandContext,
 ): Promise<APIInteractionResponse> {
   switch (interaction.type) {
     case InteractionType.ApplicationCommand:
       return handleCommand(
         interaction as APIApplicationCommandInteraction,
         env,
+        ctx,
       );
 
     case InteractionType.MessageComponent:
-      return handleButton(interaction as APIMessageComponentInteraction);
+      return handleButton(interaction as APIMessageComponentInteraction, env);
 
     default:
       return {
