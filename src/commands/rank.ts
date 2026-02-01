@@ -1,5 +1,6 @@
 import {
   APIChatInputApplicationCommandInteraction,
+  APIApplicationCommandInteractionDataIntegerOption,
   APIApplicationCommandInteractionDataStringOption,
   ApplicationCommandOptionType,
   InteractionResponseType,
@@ -7,7 +8,7 @@ import {
 } from "discord-api-types/v10";
 import { getRankMessage } from "../messages/rank";
 import { CommandHandler } from "../structures/command";
-import { LeaderboardPeriod } from "../util/stats";
+import { LeaderboardPeriod, MonthContext } from "../util/stats";
 
 const command: CommandHandler = {
   data: {
@@ -23,6 +24,22 @@ const command: CommandHandler = {
           { name: "This Month", value: "monthly" },
           { name: "All Time", value: "all_time" },
         ],
+      },
+      {
+        type: ApplicationCommandOptionType.Integer,
+        name: "year",
+        description: "Year to view (defaults to current year)",
+        required: false,
+        min_value: 2020,
+        max_value: 2100,
+      },
+      {
+        type: ApplicationCommandOptionType.Integer,
+        name: "month",
+        description: "Month to view (1-12, defaults to current month)",
+        required: false,
+        min_value: 1,
+        max_value: 12,
       },
     ],
   },
@@ -41,13 +58,43 @@ const command: CommandHandler = {
 
     const chatInteraction =
       interaction as APIChatInputApplicationCommandInteraction;
-    const options =
-      (chatInteraction.data.options as APIApplicationCommandInteractionDataStringOption[]) ?? [];
-    const periodOption = options.find((o) => o.name === "period");
+    const options = chatInteraction.data.options ?? [];
+
+    const periodOption = options.find((o) => o.name === "period") as
+      | APIApplicationCommandInteractionDataStringOption
+      | undefined;
+    const yearOption = options.find((o) => o.name === "year") as
+      | APIApplicationCommandInteractionDataIntegerOption
+      | undefined;
+    const monthOption = options.find((o) => o.name === "month") as
+      | APIApplicationCommandInteractionDataIntegerOption
+      | undefined;
+
     const period: LeaderboardPeriod =
       (periodOption?.value as LeaderboardPeriod) ?? "monthly";
 
-    const message = await getRankMessage(env.DB, guildId, period, 0);
+    let monthContext: MonthContext | undefined;
+    if (period === "monthly" && (yearOption || monthOption)) {
+      const now = new Date();
+      const year = yearOption?.value !== undefined ? Number(yearOption.value) : now.getUTCFullYear();
+      const month = monthOption?.value !== undefined ? Number(monthOption.value) : now.getUTCMonth() + 1;
+
+      const currentYear = now.getUTCFullYear();
+      const currentMonth = now.getUTCMonth() + 1;
+      if (year > currentYear || (year === currentYear && month > currentMonth)) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: "Cannot view leaderboard for future months.",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
+      monthContext = { year, month };
+    }
+
+    const message = await getRankMessage(env.DB, guildId, period, 0, monthContext);
 
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
