@@ -370,7 +370,7 @@ export async function getClanSessionsJobBatch(
        AND (status = 'pending' OR (unixepoch() - COALESCE(started_at, 0)) > ?)
        RETURNING *`,
     )
-    .bind(jobId, STALE_THRESHOLD_SECONDS)
+    .bind(jobId, STALE_THRESHOLD_SECONDS, jobId, STALE_THRESHOLD_SECONDS)
     .run<ScanJobClanSessionRow>();
 
   return pendingResult.results.map(rowToScanJobClanSession);
