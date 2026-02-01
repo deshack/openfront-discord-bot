@@ -157,9 +157,8 @@ const command: CommandHandler = {
       };
     }
 
-    const startDate = new Date(startDateStr);
-    const endDate = new Date(endDateStr);
-    endDate.setHours(23, 59, 59, 999);
+    const startDate = new Date(`${startDateStr}T00:00:00.000Z`);
+    const endDate = new Date(`${endDateStr}T23:59:59.999Z`);
 
     if (startDate > endDate) {
       return {
