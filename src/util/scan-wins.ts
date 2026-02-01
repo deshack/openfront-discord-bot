@@ -20,6 +20,8 @@ export async function initClanSessions(
   const sessionsData = await getClanSessions(clanTag, startDate, endDate);
 
   if (!sessionsData) {
+    console.debug("No clan sessions found. Skipping scan.");
+
     return;
   }
 
