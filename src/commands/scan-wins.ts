@@ -7,7 +7,7 @@ import {
   PermissionFlagsBits,
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
-import { tryCreateScanJob, getGuildConfig } from "../util/db";
+import { initClanSessions } from "../util/scan-wins";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -30,19 +30,24 @@ const command: CommandHandler = {
     options: [
       {
         type: ApplicationCommandOptionType.String,
+        name: "type",
+        description: "Which stats to collect",
+        required: true,
+        choices: [
+          { name: "Clan", value: "clan" },
+          { name: "Players", value: "players" },
+        ],
+      },
+      {
+        type: ApplicationCommandOptionType.String,
         name: "start_date",
         description: "Start date (YYYY-MM-DD format, e.g., 2025-11-01)",
         required: true,
       },
-      {
-        type: ApplicationCommandOptionType.String,
-        name: "end_date",
-        description: "End date (YYYY-MM-DD, defaults to now)",
-        required: false,
-      },
     ],
   },
   requiresPremium: true,
+
   async execute(interaction, env) {
     const guildId = interaction.guild_id;
     if (!guildId) {
@@ -58,30 +63,32 @@ const command: CommandHandler = {
     const chatInteraction =
       interaction as APIChatInputApplicationCommandInteraction;
     const options =
-      (chatInteraction.data.options as APIApplicationCommandInteractionDataStringOption[]) ??
-      [];
+      (chatInteraction.data
+        .options as APIApplicationCommandInteractionDataStringOption[]) ?? [];
 
-    const startDateOption = options.find((o) => o.name === "start_date");
-    const endDateOption = options.find((o) => o.name === "end_date");
+    const type = options?.find((o) => o.name === "type")?.value;
 
-    const startDateStr = startDateOption?.value;
-    const endDateStr = endDateOption?.value ?? new Date().toISOString().split("T")[0];
-
-    if (!startDateStr || !isValidDateString(startDateStr)) {
+    if (!type || !['clan', 'players'].includes(type)) {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
-          content: "Invalid start date format. Please use YYYY-MM-DD (e.g., 2025-11-01).",
+          content: `Unknown "type": "${type}"`,
           flags: MessageFlags.Ephemeral,
         },
       };
     }
 
-    if (!isValidDateString(endDateStr)) {
+    const startDateOption = options.find((o) => o.name === "start_date");
+
+    const startDateStr = startDateOption?.value;
+    const endDateStr = new Date().toISOString().split("T")[0];
+
+    if (!startDateStr || !isValidDateString(startDateStr)) {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
-          content: "Invalid end date format. Please use YYYY-MM-DD (e.g., 2025-12-31).",
+          content:
+            "Invalid start date format. Please use YYYY-MM-DD (e.g., 2025-11-01).",
           flags: MessageFlags.Ephemeral,
         },
       };
@@ -94,41 +101,35 @@ const command: CommandHandler = {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
-          content: "Start date cannot be after end date.",
+          content: "Start date cannot be in the future.",
           flags: MessageFlags.Ephemeral,
         },
       };
     }
 
-    const guildConfig = await getGuildConfig(env.DB, guildId);
-    const clanTag = guildConfig?.clanTag ?? null;
     const channelId = interaction.channel?.id ?? interaction.channel_id;
 
     if (!channelId) {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
-          content: "Unable to determine the channel for this command. Please try again.",
+          content:
+            "Unable to determine the channel for this command. Please try again.",
           flags: MessageFlags.Ephemeral,
         },
       };
     }
 
-    const jobId = await tryCreateScanJob(
-      env.DB,
-      guildId,
-      channelId,
-      clanTag,
-      startDate.toISOString(),
-      endDate.toISOString(),
-    );
+    if (type === 'clan') {
+      await initClanSessions(env.DB, guildId, channelId, startDateStr, endDateStr);
+    } else if (type === 'players') {
+      // TODO: await initPlayerSessions();
 
-    if (jobId === null) {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
           content:
-            "A scan is already in progress for this server. Please wait for it to complete.",
+            "This feature is still under development.",
           flags: MessageFlags.Ephemeral,
         },
       };

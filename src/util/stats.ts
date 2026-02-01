@@ -1,3 +1,5 @@
+import { GameMode } from "./api_schemas";
+
 export type LeaderboardPeriod = "monthly" | "all_time";
 
 export interface MonthContext {
@@ -68,7 +70,8 @@ export async function recordPlayerWin(
   db: D1Database,
   guildId: string,
   username: string,
-  matchId: string,
+  gameId: string,
+  gameMode: GameMode,
   score: number,
   gameStart: string,
 ): Promise<void> {
@@ -76,11 +79,11 @@ export async function recordPlayerWin(
 
   await db
     .prepare(
-      `INSERT INTO player_stats (guild_id, username, match_id, score, game_start)
+      `INSERT INTO player_stats (guild_id, username, game_id, game_type, score, game_start)
        VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT (guild_id, username, match_id) DO NOTHING`,
+       ON CONFLICT (guild_id, username, game_id) DO NOTHING`,
     )
-    .bind(guildId, username, matchId, score, gameStartTimestamp)
+    .bind(guildId, username, gameId, gameMode, score, gameStartTimestamp)
     .run();
 }
 

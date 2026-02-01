@@ -9,11 +9,15 @@ import {
 } from "../util/api_util";
 import {
   claimNextPendingJob,
+  completeClanSessionJob,
   completeScanJob,
+  countPendingClanSessionJobs,
   failScanJob,
+  getClanSessionsJobBatch,
   listAllPlayerRegistrations,
   listGuildConfigs,
   ScanJob,
+  ScanJobClanSession,
 } from "../util/db";
 import { sendChannelMessage } from "../util/discord";
 import {
@@ -23,12 +27,6 @@ import {
   markGamePosted,
 } from "../util/kv";
 import { checkPremiumForScheduled } from "../util/premium";
-import {
-  initializeScanJob,
-  processClanBatch,
-  processFFABatch,
-  transitionToFFAProcessing,
-} from "../util/scan-wins";
 import { recordPlayerWin } from "../util/stats";
 
 export async function handleScheduled(env: Env): Promise<void> {
@@ -48,40 +46,28 @@ export async function handleScanJobs(env: Env): Promise<void> {
   );
 
   try {
-    if (job.status === "pending") {
-      console.debug("Found pending scan job. Initializing scan...");
+    if (job.jobType === "clan") {
+      const clanSessions: ScanJobClanSession[] = await getClanSessionsJobBatch(
+        env.DB,
+        job.id,
+      );
 
-      await initializeScanJob(env.DB, job);
+      await Promise.all(
+        clanSessions.map((session) => handleClanSessionJob(env, job, session)),
+      );
 
-      return;
-    }
+      const remainingGames = await countPendingClanSessionJobs(env.DB, job.id) ?? 0;
 
-    if (job.status === "processing_clan") {
-      console.debug("Found processing scan job. Processing clan batch...");
-
-      const result = await processClanBatch(env.DB, job);
-
-      if (!result.hasMore) {
-        const hasFFAPlayers = await transitionToFFAProcessing(env.DB, job);
-
-        if (!hasFFAPlayers) {
-          await completeScanJob(env.DB, job.id);
-          await notifyJobComplete(env, job);
-        }
-      }
-
-      return;
-    }
-
-    if (job.status === "processing_ffa") {
-      console.debug("Found processing scan job. Processing FFA batch...");
-
-      const result = await processFFABatch(env.DB, job);
-
-      if (!result.hasMore) {
+      if (remainingGames === 0) {
         await completeScanJob(env.DB, job.id);
         await notifyJobComplete(env, job);
       }
+
+      return;
+    } else if (job.jobType === "players") {
+      // TODO: Handle players scan jobs.
+
+      console.debug("Skipping players scan job. Not yet implemented.");
 
       return;
     }
@@ -90,50 +76,42 @@ export async function handleScanJobs(env: Env): Promise<void> {
     console.error(`Error processing scan job ${job.id}:`, error);
 
     await failScanJob(env.DB, job.id, errorMessage);
-    await notifyJobFailed(env, job, errorMessage);
   }
 }
 
-function formatDateRange(startDate: string, endDate: string): string {
-  const start = startDate.split("T")[0];
-  const end = endDate.split("T")[0];
+async function handleClanSessionJob(
+  env: Env,
+  job: ScanJob,
+  session: ScanJobClanSession,
+): Promise<void> {
+  const gameInfoData = await getGameInfo(session.gameId, {
+    includeTurns: false,
+  });
 
-  return `${start} to ${end}`;
+  const clanPlayerUsernames: string[] =
+    gameInfoData?.data.info.players
+      .filter((player) => player.clanTag === job.clanTag)
+      .map((player) => player.username) ?? [];
+
+  for (const username of clanPlayerUsernames) {
+    await recordPlayerWin(
+      env.DB,
+      job.guildId,
+      username,
+      session.gameId,
+      GameMode.Team,
+      session.score,
+      gameInfoData!.data.info.start.toISOString(),
+    );
+  }
+
+  await completeClanSessionJob(env.DB, job.id, session.gameId);
 }
 
 async function notifyJobComplete(env: Env, job: ScanJob): Promise<void> {
-  const dateRange = formatDateRange(job.startDate, job.endDate);
-
-  const parts: string[] = [];
-  parts.push(`**Scan Complete** (${dateRange})`);
-
-  if (job.clanTag) {
-    parts.push(
-      `**Clan [${job.clanTag}]:** ${job.clanGamesProcessed} wins processed, ${job.clanPlayersRecorded} player records added`,
-    );
-  } else {
-    parts.push("*No clan configured - skipped clan win scanning*");
-  }
-
-  parts.push(
-    `**FFA:** ${job.ffaWinsProcessed} wins processed for registered players`,
-  );
-
-  const content = parts.join("\n");
-
-  await sendChannelMessage(env.DISCORD_TOKEN, job.channelId, { content });
-}
-
-async function notifyJobFailed(
-  env: Env,
-  job: ScanJob,
-  errorMessage: string,
-): Promise<void> {
-  const dateRange = formatDateRange(job.startDate, job.endDate);
-
-  const content = `**Scan Failed** (${dateRange})\nAn error occurred while processing the scan: ${errorMessage}`;
-
-  await sendChannelMessage(env.DISCORD_TOKEN, job.channelId, { content });
+  await sendChannelMessage(env.DISCORD_TOKEN, job.channelId, {
+    content: "**Scan Complete**",
+  });
 }
 
 async function handleClanWins(env: Env): Promise<void> {
@@ -213,6 +191,7 @@ async function handleClanWins(env: Env): Promise<void> {
                 guildId,
                 username,
                 win.gameId,
+                GameMode.Team,
                 win.score,
                 win.gameStart,
               );
@@ -271,7 +250,7 @@ async function handleFFAWins(env: Env): Promise<void> {
   }
 
   const now = new Date();
-  const startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const startDate = new Date(now.getTime() - 4 * 60 * 60 * 1000);
   const start = startDate.toISOString();
   const end = now.toISOString();
 
@@ -390,14 +369,13 @@ async function handleFFAWins(env: Env): Promise<void> {
             );
 
             if (winnerPlayer) {
-              const winnerScore = winnerPlayer.stats.gold?.[0] ?? 0;
-
               await recordPlayerWin(
                 env.DB,
                 win.guildId,
                 winnerPlayer.username,
                 win.gameId,
-                winnerScore,
+                GameMode.FFA,
+                0,
                 gameInfo.start.toISOString(),
               );
             }
