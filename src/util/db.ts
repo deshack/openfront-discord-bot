@@ -317,7 +317,7 @@ export async function claimNextPendingJob(
   const pendingResult = await db
     .prepare(
       `UPDATE scan_jobs
-       SET started_at = unixepoch()
+       SET status = 'processing', started_at = unixepoch()
        WHERE id = (
          SELECT id FROM scan_jobs
          WHERE status = 'pending'
