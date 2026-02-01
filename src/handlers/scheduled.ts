@@ -56,7 +56,10 @@ export async function handleScanJobs(env: Env): Promise<void> {
         clanSessions.map((session) => handleClanSessionJob(env, job, session)),
       );
 
-      const remainingGames = await countPendingClanSessionJobs(env.DB, job.id) ?? 0;
+      const remainingGames =
+        (await countPendingClanSessionJobs(env.DB, job.id)) ?? 0;
+
+      console.debug("remaining games: ", remainingGames.toString() + "");
 
       if (remainingGames === 0) {
         await completeScanJob(env.DB, job.id);
