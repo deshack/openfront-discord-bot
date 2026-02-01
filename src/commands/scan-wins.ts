@@ -18,9 +18,9 @@ function isValidDateString(dateStr: string): boolean {
     return false;
   }
 
-  const date = new Date(dateStr);
+  const date = new Date(`${dateStr}T00:00:00Z`);
 
-  return !isNaN(date.getTime());
+  return !isNaN(date.getTime()) && date.toISOString().startsWith(dateStr);
 }
 
 async function followUp(
