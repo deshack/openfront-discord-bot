@@ -2,6 +2,7 @@ import ffa from "./ffa";
 import info from "./info";
 import leaderboard from "./leaderboard";
 import ping from "./ping";
+import rank from "./rank";
 import setup from "./setup";
 
 export const commands = {
@@ -9,5 +10,6 @@ export const commands = {
   ping,
   leaderboard,
   info,
+  rank,
   setup,
 };
