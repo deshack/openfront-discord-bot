@@ -8,9 +8,9 @@ import {
   getPlayerSessions,
 } from "../util/api_util";
 import {
+  claimNextPendingJob,
   completeScanJob,
   failScanJob,
-  getNextPendingJob,
   listAllPlayerRegistrations,
   listGuildConfigs,
   ScanJob,
@@ -38,12 +38,12 @@ export async function handleScheduled(env: Env): Promise<void> {
 export async function handleScanJobs(env: Env): Promise<void> {
   console.debug("Running scheduled task for scan jobs.");
 
-  const job = await getNextPendingJob(env.DB);
+  const job = await claimNextPendingJob(env.DB);
   if (!job) {
     return;
   }
 
-  console.info(`Processing scan job ${job.id} for guild ${job.guildId}, status: ${job.status}`);
+  console.info(`Claimed scan job ${job.id} for guild ${job.guildId}, status: ${job.status}`);
 
   try {
     if (job.status === "pending") {

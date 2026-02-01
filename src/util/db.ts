@@ -353,6 +353,61 @@ export async function getNextPendingJob(db: D1Database): Promise<ScanJob | null>
   return rowToScanJob(row);
 }
 
+const STALE_THRESHOLD_SECONDS = 300;
+
+/**
+ * Atomically claims the next scan job for processing.
+ * This prevents race conditions where multiple workers could claim the same job.
+ *
+ * For 'pending' jobs: claims by setting started_at (WHERE started_at IS NULL or stale)
+ * For 'processing_*' jobs: claims if the job appears stale (started_at > 5 min ago)
+ *
+ * @returns The claimed job, or null if no job is available or claim failed.
+ */
+export async function claimNextPendingJob(db: D1Database): Promise<ScanJob | null> {
+  const pendingResult = await db
+    .prepare(
+      `UPDATE scan_jobs
+       SET started_at = unixepoch()
+       WHERE id = (
+         SELECT id FROM scan_jobs
+         WHERE status = 'pending'
+           AND (started_at IS NULL OR (unixepoch() - started_at) > ?)
+         ORDER BY created_at ASC
+         LIMIT 1
+       ) AND status = 'pending'
+       RETURNING *`,
+    )
+    .bind(STALE_THRESHOLD_SECONDS)
+    .first<ScanJobRow>();
+
+  if (pendingResult) {
+    return rowToScanJob(pendingResult);
+  }
+
+  const processingResult = await db
+    .prepare(
+      `UPDATE scan_jobs
+       SET started_at = unixepoch()
+       WHERE id = (
+         SELECT id FROM scan_jobs
+         WHERE status IN ('processing_clan', 'processing_ffa')
+           AND (unixepoch() - COALESCE(started_at, 0)) > ?
+         ORDER BY created_at ASC
+         LIMIT 1
+       ) AND status IN ('processing_clan', 'processing_ffa')
+       RETURNING *`,
+    )
+    .bind(STALE_THRESHOLD_SECONDS)
+    .first<ScanJobRow>();
+
+  if (processingResult) {
+    return rowToScanJob(processingResult);
+  }
+
+  return null;
+}
+
 export async function updateScanJobStatus(
   db: D1Database,
   jobId: number,
