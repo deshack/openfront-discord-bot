@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS scan_jobs (
     started_at INTEGER,
     completed_at INTEGER,
     status TEXT NOT NULL DEFAULT 'pending',
-    error_message TEXT,
+    error_message TEXT
 );
 
 CREATE INDEX idx_scan_jobs_status ON scan_jobs(status);

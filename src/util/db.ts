@@ -329,7 +329,6 @@ export async function claimNextPendingJob(
        ) AND status = 'pending'
        RETURNING *`,
     )
-    .bind(STALE_THRESHOLD_SECONDS)
     .first<ScanJobRow>();
 
   if (pendingResult) {
