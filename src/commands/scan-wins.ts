@@ -31,7 +31,7 @@ async function followUp(
 ): Promise<void> {
   const url = `https://discord.com/api/v10/webhooks/${applicationId}/${interactionToken}`;
 
-  await fetch(url, {
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bot ${token}`,
@@ -39,6 +39,12 @@ async function followUp(
     },
     body: JSON.stringify({ content }),
   });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Discord follow-up failed: ${res.status} ${text}`);
+  }
+}
 }
 
 async function runScan(
