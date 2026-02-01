@@ -8,6 +8,7 @@ import {
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
 import { initClanSessions } from "../util/scan-wins";
+import { start } from "node:repl";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -94,8 +95,11 @@ const command: CommandHandler = {
       };
     }
 
-    const startDate = new Date(`${startDateStr}T00:00:00.000Z`);
-    const endDate = new Date(`${endDateStr}T23:59:59.999Z`);
+    const startDateIso = `${startDateStr}T00:00:00.000Z`;
+    const endDateIso = `${endDateStr}T23:59:59.999Z`;
+
+    const startDate = new Date(startDateIso);
+    const endDate = new Date(endDateIso);
 
     if (startDate > endDate) {
       return {
@@ -121,7 +125,7 @@ const command: CommandHandler = {
     }
 
     if (type === 'clan') {
-      await initClanSessions(env.DB, guildId, channelId, startDateStr, endDateStr);
+      await initClanSessions(env.DB, guildId, channelId, startDateIso, endDateIso);
     } else if (type === 'players') {
       // TODO: await initPlayerSessions();
 
