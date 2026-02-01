@@ -21,7 +21,7 @@ const command: CommandHandler = {
         description: "Time period for rankings",
         required: false,
         choices: [
-          { name: "This Month", value: "monthly" },
+          { name: "Month", value: "monthly" },
           { name: "All Time", value: "all_time" },
         ],
       },
@@ -71,7 +71,7 @@ const command: CommandHandler = {
       | undefined;
 
     const period: LeaderboardPeriod =
-      (periodOption?.value as LeaderboardPeriod) ?? "monthly";
+      (periodOption?.value as LeaderboardPeriod) ?? "all_time";
 
     let monthContext: MonthContext | undefined;
     if (period === "monthly" && (yearOption || monthOption)) {

@@ -43,16 +43,22 @@ export async function handleScanJobs(env: Env): Promise<void> {
     return;
   }
 
-  console.info(`Claimed scan job ${job.id} for guild ${job.guildId}, status: ${job.status}`);
+  console.info(
+    `Claimed scan job ${job.id} for guild ${job.guildId}, status: ${job.status}`,
+  );
 
   try {
     if (job.status === "pending") {
+      console.debug("Found pending scan job. Initializing scan...");
+
       await initializeScanJob(env.DB, job);
 
       return;
     }
 
     if (job.status === "processing_clan") {
+      console.debug("Found processing scan job. Processing clan batch...");
+
       const result = await processClanBatch(env.DB, job);
 
       if (!result.hasMore) {
@@ -68,6 +74,8 @@ export async function handleScanJobs(env: Env): Promise<void> {
     }
 
     if (job.status === "processing_ffa") {
+      console.debug("Found processing scan job. Processing FFA batch...");
+
       const result = await processFFABatch(env.DB, job);
 
       if (!result.hasMore) {
@@ -107,14 +115,20 @@ async function notifyJobComplete(env: Env, job: ScanJob): Promise<void> {
     parts.push("*No clan configured - skipped clan win scanning*");
   }
 
-  parts.push(`**FFA:** ${job.ffaWinsProcessed} wins processed for registered players`);
+  parts.push(
+    `**FFA:** ${job.ffaWinsProcessed} wins processed for registered players`,
+  );
 
   const content = parts.join("\n");
 
   await sendChannelMessage(env.DISCORD_TOKEN, job.channelId, { content });
 }
 
-async function notifyJobFailed(env: Env, job: ScanJob, errorMessage: string): Promise<void> {
+async function notifyJobFailed(
+  env: Env,
+  job: ScanJob,
+  errorMessage: string,
+): Promise<void> {
   const dateRange = formatDateRange(job.startDate, job.endDate);
 
   const content = `**Scan Failed** (${dateRange})\nAn error occurred while processing the scan: ${errorMessage}`;
@@ -123,12 +137,12 @@ async function notifyJobFailed(env: Env, job: ScanJob, errorMessage: string): Pr
 }
 
 async function handleClanWins(env: Env): Promise<void> {
-  console.debug('Running scheduled task for clan wins.');
+  console.debug("Running scheduled task for clan wins.");
 
   const configs = await listGuildConfigs(env.DB);
 
   if (configs.length === 0) {
-    console.info('No clan wins configs found. Skipping scheduled task.');
+    console.info("No clan wins configs found. Skipping scheduled task.");
 
     return;
   }
@@ -169,7 +183,12 @@ async function handleClanWins(env: Env): Promise<void> {
           duration = gameInfoData.data.info.duration;
         }
 
-        const message = getClanWinMessage(win, clanPlayerUsernames, map, duration);
+        const message = getClanWinMessage(
+          win,
+          clanPlayerUsernames,
+          map,
+          duration,
+        );
         const success = await sendChannelMessage(
           env.DISCORD_TOKEN,
           config.channelId,
@@ -330,7 +349,9 @@ async function handleFFAWins(env: Env): Promise<void> {
         continue;
       }
 
-      const gameInfoData = await getGameInfo(win.gameId, { includeTurns: false });
+      const gameInfoData = await getGameInfo(win.gameId, {
+        includeTurns: false,
+      });
 
       const message = getFFAWinMessage({
         discordUserId: win.discordUserId,
@@ -344,7 +365,12 @@ async function handleFFAWins(env: Env): Promise<void> {
       );
 
       if (success) {
-        await markFFAGamePosted(env.DATA, win.guildId, win.playerId, win.gameId);
+        await markFFAGamePosted(
+          env.DATA,
+          win.guildId,
+          win.playerId,
+          win.gameId,
+        );
 
         const gameInfo = gameInfoData?.data.info;
         const isNot1v1 = gameInfo && gameInfo.players.length > 2;

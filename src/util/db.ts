@@ -299,11 +299,11 @@ export async function tryCreateScanJob(
   const result = await db
     .prepare(
       `INSERT INTO scan_jobs (guild_id, channel_id, clan_tag, start_date, end_date)
-       SELECT ?, ?, ?, ?, ?
-       WHERE NOT EXISTS (
-         SELECT 1 FROM scan_jobs
-         WHERE guild_id = ? AND status IN ('pending', 'processing_clan', 'processing_ffa')
-       )`,
+       SELECT ?, ?, ?, ?, ?`,
+       // WHERE NOT EXISTS (
+       //   SELECT 1 FROM scan_jobs
+       //   WHERE guild_id = ? AND status IN ('pending', 'processing_clan', 'processing_ffa')
+       // )`,
     )
     .bind(guildId, channelId, clanTag, startDate, endDate, guildId)
     .run();
