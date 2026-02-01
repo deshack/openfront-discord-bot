@@ -205,7 +205,7 @@ const command: CommandHandler = {
       };
     }
 
-    await runScan(
+    void runScan(
       env,
       guildId,
       clanTag,
