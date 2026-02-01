@@ -305,7 +305,7 @@ export async function tryCreateScanJob(
        //   WHERE guild_id = ? AND status IN ('pending', 'processing_clan', 'processing_ffa')
        // )`,
     )
-    .bind(guildId, channelId, clanTag, startDate, endDate, guildId)
+    .bind(guildId, channelId, clanTag, startDate, endDate)
     .run();
 
   if (result.meta.changes === 0) {
