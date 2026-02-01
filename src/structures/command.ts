@@ -7,6 +7,7 @@ import { Env } from "../types/env";
 
 export interface CommandHandler {
   data: RESTPostAPIChatInputApplicationCommandsJSONBody;
+  requiresPremium?: boolean;
   execute(
     interaction: APIApplicationCommandInteraction,
     env: Env,
