@@ -72,7 +72,7 @@ export async function handleButton(
     const period = parts[1] as LeaderboardPeriod;
     const year = parseInt(parts[2]);
     const month = parseInt(parts[3]);
-    const page = parseInt(parts[4]);
+    const page = parseInt(parts[4]) || 0;
 
     let monthContext: MonthContext | undefined;
     if (period === "monthly" && year > 0 && month > 0) {
