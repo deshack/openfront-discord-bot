@@ -110,57 +110,41 @@ interface LeaderboardEntry {
   totalScore: number;
 }
 
+/**
+ * Builds an ASCII table for the leaderboard:
+ *
+ *   #  | Player   | Wins | Points
+ *  ----+----------+------+--------
+ *   1  | username |    5 |  1,234
+ *   2  | user2    |    3 |    890
+ */
 function buildLeaderboardTable(entries: LeaderboardEntry[], offset: number): string {
   const headers = ["#", "Player", "Wins", "Points"];
 
   const rows = entries.map((entry, index) => {
     const rank = offset + index + 1;
-    const medal = getMedal(rank);
     const formattedScore = entry.totalScore.toLocaleString("en-US");
 
-    return {
-      rank: `${medal}${medal ? "" : "   "}${rank}`,
-      player: entry.username,
-      wins: String(entry.wins),
-      points: formattedScore,
-    };
+    return [String(rank), entry.username, String(entry.wins), formattedScore];
   });
 
-  const rankWidth = Math.max(headers[0].length, ...rows.map((r) => stripEmoji(r.rank).length));
-  const playerWidth = Math.max(headers[1].length, ...rows.map((r) => r.player.length));
-  const winsWidth = Math.max(headers[2].length, ...rows.map((r) => r.wins.length));
-  const pointsWidth = Math.max(headers[3].length, ...rows.map((r) => r.points.length));
+  const colWidths = headers.map((header, i) =>
+    Math.max(header.length, ...rows.map((row) => row[i].length)),
+  );
 
-  const headerRow = [
-    padRight(headers[0], rankWidth),
-    padRight(headers[1], playerWidth),
-    padLeft(headers[2], winsWidth),
-    padLeft(headers[3], pointsWidth),
-  ].join(" │ ");
+  const headerRow = headers
+    .map((h, i) => (i === 0 || i === 1 ? padRight(h, colWidths[i]) : padLeft(h, colWidths[i])))
+    .join(" | ");
 
-  const separator = [
-    "─".repeat(rankWidth),
-    "─".repeat(playerWidth),
-    "─".repeat(winsWidth),
-    "─".repeat(pointsWidth),
-  ].join("─┼─");
+  const separator = colWidths.map((w) => "-".repeat(w)).join("-+-");
 
-  const dataRows = rows.map((row) => {
-    const rankDisplay = padRightWithEmoji(row.rank, rankWidth);
-
-    return [
-      rankDisplay,
-      padRight(row.player, playerWidth),
-      padLeft(row.wins, winsWidth),
-      padLeft(row.points, pointsWidth),
-    ].join(" │ ");
-  });
+  const dataRows = rows.map((row) =>
+    row
+      .map((cell, i) => (i === 0 || i === 1 ? padRight(cell, colWidths[i]) : padLeft(cell, colWidths[i])))
+      .join(" | "),
+  );
 
   return "```\n" + [headerRow, separator, ...dataRows].join("\n") + "\n```";
-}
-
-function stripEmoji(str: string): string {
-  return str.replace(/[\u{1F300}-\u{1F9FF}]/gu, "").trim();
 }
 
 function padRight(str: string, width: number): string {
@@ -169,12 +153,6 @@ function padRight(str: string, width: number): string {
 
 function padLeft(str: string, width: number): string {
   return " ".repeat(Math.max(0, width - str.length)) + str;
-}
-
-function padRightWithEmoji(str: string, width: number): string {
-  const visibleLength = stripEmoji(str).length;
-
-  return str + " ".repeat(Math.max(0, width - visibleLength));
 }
 
 const MONTH_NAMES = [
@@ -190,15 +168,3 @@ function getMonthName(context?: MonthContext): string {
   return `${MONTH_NAMES[month - 1]} ${year}`;
 }
 
-function getMedal(rank: number): string {
-  switch (rank) {
-    case 1:
-      return "\ud83e\udd47 ";
-    case 2:
-      return "\ud83e\udd48 ";
-    case 3:
-      return "\ud83e\udd49 ";
-    default:
-      return "";
-  }
-}
