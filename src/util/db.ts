@@ -208,6 +208,8 @@ export interface ScanJob {
   clanTag: string | null;
   status: ScanJobStatus;
   jobType: ScanJobType;
+  startDate: string | null;
+  endDate: string | null;
   createdAt: number;
   startedAt: number | null;
   completedAt: number | null;
@@ -221,6 +223,8 @@ interface ScanJobRow {
   clan_tag: string | null;
   status: string;
   job_type: string;
+  start_date: string | null;
+  end_date: string | null;
   created_at: number;
   started_at: number | null;
   completed_at: number | null;
@@ -235,6 +239,8 @@ function rowToScanJob(row: ScanJobRow): ScanJob {
     clanTag: row.clan_tag,
     status: row.status as ScanJobStatus,
     jobType: row.job_type as ScanJobType,
+    startDate: row.start_date,
+    endDate: row.end_date,
     createdAt: row.created_at,
     startedAt: row.started_at,
     completedAt: row.completed_at,
@@ -270,19 +276,32 @@ function rowToScanJobClanSession(
   };
 }
 
+export interface CreateScanJobOptions {
+  startDate?: string;
+  endDate?: string;
+}
+
 export async function createScanJob(
   db: D1Database,
   guildId: string,
   channelId: string,
   clanTag: string | null,
   jobType: ScanJobType,
+  options?: CreateScanJobOptions,
 ): Promise<number> {
   const result = await db
     .prepare(
-      `INSERT INTO scan_jobs (guild_id, channel_id, clan_tag, job_type)
-       VALUES (?, ?, ?, ?)`,
+      `INSERT INTO scan_jobs (guild_id, channel_id, clan_tag, job_type, start_date, end_date)
+       VALUES (?, ?, ?, ?, ?, ?)`,
     )
-    .bind(guildId, channelId, clanTag, jobType)
+    .bind(
+      guildId,
+      channelId,
+      clanTag,
+      jobType,
+      options?.startDate ?? null,
+      options?.endDate ?? null,
+    )
     .run();
 
   return result.meta.last_row_id as number;
@@ -419,4 +438,185 @@ export async function failScanJob(
     )
     .bind(errorMessage, jobId)
     .run();
+}
+
+// ========== Scan Job Players (Discovery Phase) ==========
+
+export interface ScanJobPlayer {
+  scanJobId: number;
+  playerId: string;
+  status: ScanJobStatus;
+  errorMessage: string | null;
+}
+
+interface ScanJobPlayerRow {
+  scan_job_id: number;
+  player_id: string;
+  status: string;
+  error_message: string | null;
+}
+
+function rowToScanJobPlayer(row: ScanJobPlayerRow): ScanJobPlayer {
+  return {
+    scanJobId: row.scan_job_id,
+    playerId: row.player_id,
+    status: row.status as ScanJobStatus,
+    errorMessage: row.error_message,
+  };
+}
+
+export async function createScanJobPlayer(
+  db: D1Database,
+  scanJobId: number,
+  playerId: string,
+): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO scan_job_players (scan_job_id, player_id) VALUES (?, ?)`,
+    )
+    .bind(scanJobId, playerId)
+    .run();
+}
+
+export async function getPlayersJobBatch(
+  db: D1Database,
+  jobId: number,
+  limit: number = 5,
+): Promise<ScanJobPlayer[]> {
+  const result = await db
+    .prepare(
+      `UPDATE scan_job_players
+       SET status = 'processing', started_at = unixepoch()
+       WHERE player_id IN (
+         SELECT player_id FROM scan_job_players
+         WHERE scan_job_id = ?
+           AND status = 'pending'
+         ORDER BY player_id ASC
+         LIMIT ?
+       ) AND scan_job_id = ?
+       AND status = 'pending'
+       RETURNING *`,
+    )
+    .bind(jobId, limit, jobId)
+    .run<ScanJobPlayerRow>();
+
+  return result.results.map(rowToScanJobPlayer);
+}
+
+export async function completePlayerJob(
+  db: D1Database,
+  jobId: number,
+  playerId: string,
+): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE scan_job_players SET status = 'completed', completed_at = unixepoch() WHERE scan_job_id = ? AND player_id = ?`,
+    )
+    .bind(jobId, playerId)
+    .run();
+}
+
+export async function countPendingPlayers(
+  db: D1Database,
+  jobId: number,
+): Promise<number> {
+  const result = await db
+    .prepare(
+      `SELECT COUNT(*) as count FROM scan_job_players WHERE scan_job_id = ? AND status IN ('pending', 'processing')`,
+    )
+    .bind(jobId)
+    .first<{ count: number }>();
+
+  return result?.count ?? 0;
+}
+
+// ========== Scan Job FFA Games (Processing Phase) ==========
+
+export interface ScanJobFFAGame {
+  scanJobId: number;
+  gameId: string;
+  status: ScanJobStatus;
+  errorMessage: string | null;
+}
+
+interface ScanJobFFAGameRow {
+  scan_job_id: number;
+  game_id: string;
+  status: string;
+  error_message: string | null;
+}
+
+function rowToScanJobFFAGame(row: ScanJobFFAGameRow): ScanJobFFAGame {
+  return {
+    scanJobId: row.scan_job_id,
+    gameId: row.game_id,
+    status: row.status as ScanJobStatus,
+    errorMessage: row.error_message,
+  };
+}
+
+export async function createScanJobFFAGame(
+  db: D1Database,
+  scanJobId: number,
+  gameId: string,
+): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO scan_job_ffa_games (scan_job_id, game_id) VALUES (?, ?)
+       ON CONFLICT (scan_job_id, game_id) DO NOTHING`,
+    )
+    .bind(scanJobId, gameId)
+    .run();
+}
+
+export async function getFFAGamesJobBatch(
+  db: D1Database,
+  jobId: number,
+  limit: number = 40,
+): Promise<ScanJobFFAGame[]> {
+  const result = await db
+    .prepare(
+      `UPDATE scan_job_ffa_games
+       SET status = 'processing', started_at = unixepoch()
+       WHERE game_id IN (
+         SELECT game_id FROM scan_job_ffa_games
+         WHERE scan_job_id = ?
+           AND status = 'pending'
+         ORDER BY game_id ASC
+         LIMIT ?
+       ) AND scan_job_id = ?
+       AND status = 'pending'
+       RETURNING *`,
+    )
+    .bind(jobId, limit, jobId)
+    .run<ScanJobFFAGameRow>();
+
+  return result.results.map(rowToScanJobFFAGame);
+}
+
+export async function completeFFAGameJob(
+  db: D1Database,
+  jobId: number,
+  gameId: string,
+): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE scan_job_ffa_games SET status = 'completed', completed_at = unixepoch() WHERE scan_job_id = ? AND game_id = ?`,
+    )
+    .bind(jobId, gameId)
+    .run();
+}
+
+export async function countPendingFFAGames(
+  db: D1Database,
+  jobId: number,
+): Promise<number> {
+  const result = await db
+    .prepare(
+      `SELECT COUNT(*) as count FROM scan_job_ffa_games WHERE scan_job_id = ? AND status IN ('pending', 'processing')`,
+    )
+    .bind(jobId)
+    .first<{ count: number }>();
+
+  return result?.count ?? 0;
 }

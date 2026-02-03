@@ -10,14 +10,23 @@ import {
 import {
   claimNextPendingJob,
   completeClanSessionJob,
+  completeFFAGameJob,
+  completePlayerJob,
   completeScanJob,
   countPendingClanSessionJobs,
+  countPendingFFAGames,
+  countPendingPlayers,
+  createScanJobFFAGame,
   failScanJob,
   getClanSessionsJobBatch,
+  getFFAGamesJobBatch,
+  getPlayersJobBatch,
   listAllPlayerRegistrations,
   listGuildConfigs,
   ScanJob,
   ScanJobClanSession,
+  ScanJobFFAGame,
+  ScanJobPlayer,
 } from "../util/db";
 import { sendChannelMessage } from "../util/discord";
 import {
@@ -68,9 +77,13 @@ export async function handleScanJobs(env: Env): Promise<void> {
 
       return;
     } else if (job.jobType === "players") {
-      // TODO: Handle players scan jobs.
+      const pendingPlayers = await countPendingPlayers(env.DB, job.id);
 
-      console.debug("Skipping players scan job. Not yet implemented.");
+      if (pendingPlayers > 0) {
+        await handlePlayerDiscovery(env, job);
+      } else {
+        await handleFFAGamesProcessing(env, job);
+      }
 
       return;
     }
@@ -117,6 +130,176 @@ async function notifyJobComplete(env: Env, job: ScanJob): Promise<void> {
   await sendChannelMessage(env.DISCORD_TOKEN, job.channelId, {
     content: "**Scan Complete**",
   });
+}
+
+async function handlePlayerDiscovery(env: Env, job: ScanJob): Promise<void> {
+  const players = await getPlayersJobBatch(env.DB, job.id, 5);
+
+  if (players.length === 0) {
+    return;
+  }
+
+  console.info(
+    `Processing ${players.length} players for job ${job.id} (discovery phase)`,
+  );
+
+  await Promise.all(
+    players.map((player) => processPlayerDiscovery(env, job, player)),
+  );
+}
+
+async function processPlayerDiscovery(
+  env: Env,
+  job: ScanJob,
+  player: ScanJobPlayer,
+): Promise<void> {
+  if (!job.startDate || !job.endDate) {
+    console.error(`Job ${job.id} missing date range for player discovery`);
+    await completePlayerJob(env.DB, job.id, player.playerId);
+
+    return;
+  }
+
+  try {
+    const sessionsData = await getPlayerSessions(
+      player.playerId,
+      job.startDate,
+      job.endDate,
+    );
+
+    if (!sessionsData) {
+      console.debug(
+        `No sessions found for player ${player.playerId} in job ${job.id}`,
+      );
+      await completePlayerJob(env.DB, job.id, player.playerId);
+
+      return;
+    }
+
+    const ffaWins = sessionsData.data.filter(
+      (session) =>
+        session.hasWon &&
+        session.gameType === GameType.Public &&
+        session.gameMode === GameMode.FFA &&
+        session.clanTag === job.clanTag,
+    );
+
+    console.debug(
+      `Found ${ffaWins.length} FFA wins for player ${player.playerId} with clan tag ${job.clanTag}`,
+    );
+
+    for (const win of ffaWins) {
+      await createScanJobFFAGame(env.DB, job.id, win.gameId);
+    }
+
+    await completePlayerJob(env.DB, job.id, player.playerId);
+  } catch (error) {
+    console.error(
+      `Error processing player ${player.playerId} in job ${job.id}:`,
+      error,
+    );
+    await completePlayerJob(env.DB, job.id, player.playerId);
+  }
+}
+
+async function handleFFAGamesProcessing(env: Env, job: ScanJob): Promise<void> {
+  const games = await getFFAGamesJobBatch(env.DB, job.id, 40);
+
+  if (games.length === 0) {
+    const pendingGames = await countPendingFFAGames(env.DB, job.id);
+
+    if (pendingGames === 0) {
+      await completeScanJob(env.DB, job.id);
+      await notifyJobComplete(env, job);
+    }
+
+    return;
+  }
+
+  console.info(
+    `Processing ${games.length} FFA games for job ${job.id} (processing phase)`,
+  );
+
+  await Promise.all(games.map((game) => processFFAGame(env, job, game)));
+
+  const remainingGames = await countPendingFFAGames(env.DB, job.id);
+
+  if (remainingGames === 0) {
+    await completeScanJob(env.DB, job.id);
+    await notifyJobComplete(env, job);
+  }
+}
+
+async function processFFAGame(
+  env: Env,
+  job: ScanJob,
+  game: ScanJobFFAGame,
+): Promise<void> {
+  try {
+    const gameInfoData = await getGameInfo(game.gameId, { includeTurns: false });
+
+    if (!gameInfoData) {
+      console.debug(`Game ${game.gameId} not found`);
+      await completeFFAGameJob(env.DB, job.id, game.gameId);
+
+      return;
+    }
+
+    const gameInfo = gameInfoData.data.info;
+
+    if (gameInfo.players.length <= 2) {
+      console.debug(`Game ${game.gameId} is 1v1, skipping`);
+      await completeFFAGameJob(env.DB, job.id, game.gameId);
+
+      return;
+    }
+
+    if (!gameInfo.winner) {
+      console.debug(`Game ${game.gameId} has no winner, skipping`);
+      await completeFFAGameJob(env.DB, job.id, game.gameId);
+
+      return;
+    }
+
+    const winnerPlayer = gameInfo.players.find(
+      (p) => p.clientID === gameInfo.winner?.clientID,
+    );
+
+    if (!winnerPlayer) {
+      console.debug(`Winner not found in game ${game.gameId}`);
+      await completeFFAGameJob(env.DB, job.id, game.gameId);
+
+      return;
+    }
+
+    if (winnerPlayer.clanTag !== job.clanTag) {
+      console.debug(
+        `Winner ${winnerPlayer.username} in game ${game.gameId} does not have clan tag ${job.clanTag}`,
+      );
+      await completeFFAGameJob(env.DB, job.id, game.gameId);
+
+      return;
+    }
+
+    await recordPlayerWin(
+      env.DB,
+      job.guildId,
+      winnerPlayer.username,
+      game.gameId,
+      GameMode.FFA,
+      0,
+      gameInfo.start.toISOString(),
+    );
+
+    console.debug(
+      `Recorded FFA win for ${winnerPlayer.username} in game ${game.gameId}`,
+    );
+
+    await completeFFAGameJob(env.DB, job.id, game.gameId);
+  } catch (error) {
+    console.error(`Error processing game ${game.gameId} in job ${job.id}:`, error);
+    await completeFFAGameJob(env.DB, job.id, game.gameId);
+  }
 }
 
 async function handleClanWins(env: Env): Promise<void> {

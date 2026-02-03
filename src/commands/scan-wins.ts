@@ -7,7 +7,7 @@ import {
   PermissionFlagsBits,
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
-import { initClanSessions } from "../util/scan-wins";
+import { initClanSessions, initPlayerSessions } from "../util/scan-wins";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -126,16 +126,23 @@ const command: CommandHandler = {
     if (type === 'clan') {
       await initClanSessions(env.DB, guildId, channelId, startDateIso, endDateIso);
     } else if (type === 'players') {
-      // TODO: await initPlayerSessions();
+      const result = await initPlayerSessions(
+        env.DB,
+        guildId,
+        channelId,
+        startDateIso,
+        endDateIso,
+      );
 
-      return {
-        type: InteractionResponseType.ChannelMessageWithSource,
-        data: {
-          content:
-            "This feature is still under development.",
-          flags: MessageFlags.Ephemeral,
-        },
-      };
+      if (!result.success) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: result.message ?? "Failed to queue player scan.",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
     }
 
     return {
