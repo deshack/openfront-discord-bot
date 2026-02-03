@@ -20,6 +20,7 @@ import {
   failScanJob,
   getClanSessionsJobBatch,
   getFFAGamesJobBatch,
+  getGuildConfig,
   getPlayersJobBatch,
   listAllPlayerRegistrations,
   listGuildConfigs,
@@ -552,8 +553,17 @@ async function handleFFAWins(env: Env): Promise<void> {
           );
 
           if (premiumStatus.isPremium) {
+            const guildConfig = await getGuildConfig(env.DB, win.guildId);
+            const clanTag = guildConfig?.clanTag ?? null;
+
+            if (!clanTag) {
+              continue;
+            }
+
             const winnerPlayer = gameInfo.players.find(
-              (p) => p.clientID === gameInfo.winner?.clientID,
+              (p) =>
+                p.clientID === gameInfo.winner?.clientID &&
+                p.clanTag === clanTag,
             );
 
             if (winnerPlayer) {
