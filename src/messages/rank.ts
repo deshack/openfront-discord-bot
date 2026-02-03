@@ -7,7 +7,6 @@ import {
   LeaderboardPeriod,
   MonthContext,
 } from "../util/stats";
-import { dateToDiscordTimestamp, TimestampStyles } from "../util/date_format";
 
 const RANK_PAGE_ENTRIES = 10;
 
@@ -53,8 +52,14 @@ export async function getRankMessage(
   if (period === "monthly") {
     if (isCurrentMonth(monthContext)) {
       const endOfMonth = getEndOfMonth(monthContext);
-      const timestamp = dateToDiscordTimestamp(endOfMonth, TimestampStyles.RelativeTime);
-      footer = `Season ends ${timestamp}`;
+      const lastDay = new Date(endOfMonth.getTime() - 1);
+      const formatted = lastDay.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+      footer = `Season ends ${formatted}`;
     } else {
       footer = "Past season standings";
     }
