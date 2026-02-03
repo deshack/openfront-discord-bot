@@ -10,6 +10,8 @@ export interface MonthContext {
 export interface LeaderboardEntry {
   username: string;
   wins: number;
+  teamWins: number;
+  ffaWins: number;
   totalScore: number;
 }
 
@@ -27,6 +29,8 @@ export interface PlayerRank {
 interface LeaderboardRow {
   username: string;
   wins: number;
+  team_wins: number;
+  ffa_wins: number;
   total_score: number;
 }
 
@@ -112,6 +116,8 @@ export async function getLeaderboard(
         `SELECT
            username,
            COUNT(*) as wins,
+           SUM(CASE WHEN game_type = 'Team' THEN 1 ELSE 0 END) as team_wins,
+           SUM(CASE WHEN game_type = 'Free For All' THEN 1 ELSE 0 END) as ffa_wins,
            SUM(score) as total_score
          FROM player_stats
          WHERE guild_id = ?
@@ -126,6 +132,8 @@ export async function getLeaderboard(
       entries: results.map((row) => ({
         username: row.username,
         wins: row.wins,
+        teamWins: row.team_wins,
+        ffaWins: row.ffa_wins,
         totalScore: row.total_score,
       })),
       totalCount,
@@ -159,6 +167,8 @@ export async function getLeaderboard(
         ? `SELECT
              username,
              COUNT(*) as wins,
+             SUM(CASE WHEN game_type = 'Team' THEN 1 ELSE 0 END) as team_wins,
+             SUM(CASE WHEN game_type = 'Free For All' THEN 1 ELSE 0 END) as ffa_wins,
              SUM(score) as total_score
            FROM player_stats
            WHERE guild_id = ?
@@ -170,6 +180,8 @@ export async function getLeaderboard(
         : `SELECT
              username,
              COUNT(*) as wins,
+             SUM(CASE WHEN game_type = 'Team' THEN 1 ELSE 0 END) as team_wins,
+             SUM(CASE WHEN game_type = 'Free For All' THEN 1 ELSE 0 END) as ffa_wins,
              SUM(score) as total_score
            FROM player_stats
            WHERE guild_id = ?
@@ -185,6 +197,8 @@ export async function getLeaderboard(
     entries: results.map((row) => ({
       username: row.username,
       wins: row.wins,
+      teamWins: row.team_wins,
+      ffaWins: row.ffa_wins,
       totalScore: row.total_score,
     })),
     totalCount,

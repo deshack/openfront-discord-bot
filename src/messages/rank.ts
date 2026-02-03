@@ -114,25 +114,34 @@ export async function getRankMessage(
 interface LeaderboardEntry {
   username: string;
   wins: number;
+  teamWins: number;
+  ffaWins: number;
   totalScore: number;
 }
 
 /**
  * Builds an ASCII table for the leaderboard:
  *
- *   #  | Player   | Wins | Points
- *  ----+----------+------+--------
- *   1  | username |    5 |  1,234
- *   2  | user2    |    3 |    890
+ *   #  | Player   | Wins | Team | FFA | Points
+ *  ----+----------+------+------+-----+--------
+ *   1  | username |    5 |    3 |   2 |  1,234
+ *   2  | user2    |    3 |    2 |   1 |    890
  */
 function buildLeaderboardTable(entries: LeaderboardEntry[], offset: number): string {
-  const headers = ["#", "Player", "Wins", "Points"];
+  const headers = ["#", "Player", "Wins", "Team", "FFA", "Points"];
 
   const rows = entries.map((entry, index) => {
     const rank = offset + index + 1;
     const formattedScore = entry.totalScore.toLocaleString("en-US");
 
-    return [String(rank), entry.username, String(entry.wins), formattedScore];
+    return [
+      String(rank),
+      entry.username,
+      String(entry.wins),
+      String(entry.teamWins),
+      String(entry.ffaWins),
+      formattedScore,
+    ];
   });
 
   const colWidths = headers.map((header, i) =>
