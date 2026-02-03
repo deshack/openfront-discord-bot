@@ -37,15 +37,7 @@ export async function getRankMessage(
   if (result.entries.length === 0) {
     description = "No games recorded yet. Win some games to appear on the leaderboard!";
   } else {
-    description = result.entries
-      .map((entry, index) => {
-        const rank = offset + index + 1;
-        const medal = getMedal(rank);
-        const formattedScore = entry.totalScore.toLocaleString("en-US");
-
-        return `${medal}**#${rank}** ${entry.username} - ${entry.wins} win${entry.wins === 1 ? "" : "s"} (${formattedScore} pts)`;
-      })
-      .join("\n");
+    description = buildLeaderboardTable(result.entries, offset);
   }
 
   let footer: string;
@@ -110,6 +102,79 @@ export async function getRankMessage(
       },
     ],
   };
+}
+
+interface LeaderboardEntry {
+  username: string;
+  wins: number;
+  totalScore: number;
+}
+
+function buildLeaderboardTable(entries: LeaderboardEntry[], offset: number): string {
+  const headers = ["#", "Player", "Wins", "Points"];
+
+  const rows = entries.map((entry, index) => {
+    const rank = offset + index + 1;
+    const medal = getMedal(rank);
+    const formattedScore = entry.totalScore.toLocaleString("en-US");
+
+    return {
+      rank: `${medal}${medal ? "" : "   "}${rank}`,
+      player: entry.username,
+      wins: String(entry.wins),
+      points: formattedScore,
+    };
+  });
+
+  const rankWidth = Math.max(headers[0].length, ...rows.map((r) => stripEmoji(r.rank).length));
+  const playerWidth = Math.max(headers[1].length, ...rows.map((r) => r.player.length));
+  const winsWidth = Math.max(headers[2].length, ...rows.map((r) => r.wins.length));
+  const pointsWidth = Math.max(headers[3].length, ...rows.map((r) => r.points.length));
+
+  const headerRow = [
+    padRight(headers[0], rankWidth),
+    padRight(headers[1], playerWidth),
+    padLeft(headers[2], winsWidth),
+    padLeft(headers[3], pointsWidth),
+  ].join(" │ ");
+
+  const separator = [
+    "─".repeat(rankWidth),
+    "─".repeat(playerWidth),
+    "─".repeat(winsWidth),
+    "─".repeat(pointsWidth),
+  ].join("─┼─");
+
+  const dataRows = rows.map((row) => {
+    const rankDisplay = padRightWithEmoji(row.rank, rankWidth);
+
+    return [
+      rankDisplay,
+      padRight(row.player, playerWidth),
+      padLeft(row.wins, winsWidth),
+      padLeft(row.points, pointsWidth),
+    ].join(" │ ");
+  });
+
+  return "```\n" + [headerRow, separator, ...dataRows].join("\n") + "\n```";
+}
+
+function stripEmoji(str: string): string {
+  return str.replace(/[\u{1F300}-\u{1F9FF}]/gu, "").trim();
+}
+
+function padRight(str: string, width: number): string {
+  return str + " ".repeat(Math.max(0, width - str.length));
+}
+
+function padLeft(str: string, width: number): string {
+  return " ".repeat(Math.max(0, width - str.length)) + str;
+}
+
+function padRightWithEmoji(str: string, width: number): string {
+  const visibleLength = stripEmoji(str).length;
+
+  return str + " ".repeat(Math.max(0, width - visibleLength));
 }
 
 const MONTH_NAMES = [
