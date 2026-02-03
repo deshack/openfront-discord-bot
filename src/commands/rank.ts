@@ -4,7 +4,7 @@ import {
   APIApplicationCommandInteractionDataStringOption,
   ApplicationCommandOptionType,
   InteractionResponseType,
-  MessageFlags,
+  MessageFlags, PermissionFlagsBits,
 } from "discord-api-types/v10";
 import { getRankMessage } from "../messages/rank";
 import { CommandHandler } from "../structures/command";
@@ -14,6 +14,7 @@ const command: CommandHandler = {
   data: {
     name: "rank",
     description: "View the clan leaderboard rankings",
+    default_member_permissions: String(PermissionFlagsBits.ManageGuild),
     options: [
       {
         type: ApplicationCommandOptionType.String,
@@ -76,12 +77,21 @@ const command: CommandHandler = {
     let monthContext: MonthContext | undefined;
     if (period === "monthly" && (yearOption || monthOption)) {
       const now = new Date();
-      const year = yearOption?.value !== undefined ? Number(yearOption.value) : now.getUTCFullYear();
-      const month = monthOption?.value !== undefined ? Number(monthOption.value) : now.getUTCMonth() + 1;
+      const year =
+        yearOption?.value !== undefined
+          ? Number(yearOption.value)
+          : now.getUTCFullYear();
+      const month =
+        monthOption?.value !== undefined
+          ? Number(monthOption.value)
+          : now.getUTCMonth() + 1;
 
       const currentYear = now.getUTCFullYear();
       const currentMonth = now.getUTCMonth() + 1;
-      if (year > currentYear || (year === currentYear && month > currentMonth)) {
+      if (
+        year > currentYear ||
+        (year === currentYear && month > currentMonth)
+      ) {
         return {
           type: InteractionResponseType.ChannelMessageWithSource,
           data: {
@@ -94,7 +104,13 @@ const command: CommandHandler = {
       monthContext = { year, month };
     }
 
-    const message = await getRankMessage(env.DB, guildId, period, 0, monthContext);
+    const message = await getRankMessage(
+      env.DB,
+      guildId,
+      period,
+      0,
+      monthContext,
+    );
 
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
