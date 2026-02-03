@@ -8,7 +8,6 @@ import {
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
 import { initClanSessions } from "../util/scan-wins";
-import { start } from "node:repl";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 

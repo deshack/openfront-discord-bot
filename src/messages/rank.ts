@@ -86,6 +86,13 @@ export async function getRankMessage(
     disabled: isLastPage,
   };
 
+  const refreshButton = {
+    type: ComponentType.Button as const,
+    emoji: { name: "🔄" },
+    style: ButtonStyle.Secondary as ButtonStyle.Secondary,
+    custom_id: `rank-refresh|${period}|${year}|${month}|${page}|${Date.now()}`,
+  };
+
   return {
     embeds: [
       {
@@ -98,7 +105,7 @@ export async function getRankMessage(
     components: [
       {
         type: ComponentType.ActionRow,
-        components: [backButton, pageButton, nextButton],
+        components: [backButton, pageButton, nextButton, refreshButton],
       },
     ],
   };

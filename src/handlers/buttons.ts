@@ -56,6 +56,53 @@ export async function handleButton(
     };
   }
 
+  if (customId.startsWith("rank-refresh|")) {
+    const guildId = interaction.guild_id;
+    if (!guildId) {
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: "This feature can only be used in a server.",
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
+
+    const parts = customId.split("|");
+    const period = parts[1] as LeaderboardPeriod;
+    const year = parseInt(parts[2]);
+    const month = parseInt(parts[3]);
+    const page = parseInt(parts[4]) || 0;
+    const lastRefresh = parseInt(parts[5]) || 0;
+
+    const now = Date.now();
+    const cooldownMs = 30 * 1000;
+    const remaining = cooldownMs - (now - lastRefresh);
+
+    if (remaining > 0) {
+      const secondsLeft = Math.ceil(remaining / 1000);
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: `Please wait ${secondsLeft} seconds before refreshing.`,
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
+
+    let monthContext: MonthContext | undefined;
+    if (period === "monthly" && year > 0 && month > 0) {
+      monthContext = { year, month };
+    }
+
+    const message = await getRankMessage(env.DB, guildId, period, page, monthContext);
+
+    return {
+      type: InteractionResponseType.UpdateMessage,
+      data: message,
+    };
+  }
+
   if (customId.startsWith("rank|")) {
     const guildId = interaction.guild_id;
     if (!guildId) {
