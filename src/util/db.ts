@@ -410,10 +410,11 @@ export async function countPendingClanSessionJobs(
 ): Promise<number | null> {
   return await db
     .prepare(
-      `SELECT COUNT(*) FROM scan_job_clan_sessions WHERE scan_job_id = ? and status IN ('pending', 'processing')`,
+      `SELECT COUNT(*) as num FROM scan_job_clan_sessions WHERE scan_job_id = ? and status IN ('pending', 'processing')`,
     )
     .bind(jobId)
-    .first<number>();
+    .first<{num: number}>()
+    .then(result => result?.num ?? 0);
 }
 export async function completeScanJob(
   db: D1Database,
