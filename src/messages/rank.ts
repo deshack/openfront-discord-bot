@@ -1,5 +1,6 @@
 import { ButtonStyle, ComponentType } from "discord-api-types/v10";
-import { MessageData } from "../structures/message";
+import { MessageDataWithFiles } from "../structures/message";
+import { generateLeaderboardImage, LeaderboardRow } from "../util/image-table";
 import {
   getEndOfMonth,
   getLeaderboard,
@@ -16,7 +17,7 @@ export async function getRankMessage(
   period: LeaderboardPeriod,
   page: number,
   monthContext?: MonthContext,
-): Promise<MessageData> {
+): Promise<MessageDataWithFiles> {
   const offset = page * RANK_PAGE_ENTRIES;
   const result = await getLeaderboard(
     db,
@@ -33,11 +34,22 @@ export async function getRankMessage(
   const periodTitle = period === "monthly" ? getMonthName(monthContext) : "All Time";
   const title = `Clan Leaderboard - ${periodTitle}`;
 
-  let description: string;
-  if (result.entries.length === 0) {
-    description = "No games recorded yet. Win some games to appear on the leaderboard!";
-  } else {
-    description = buildLeaderboardTable(result.entries, offset);
+  const hasEntries = result.entries.length > 0;
+  let imageBuffer: ArrayBuffer | undefined;
+  const timestamp = Date.now();
+  const filename = `leaderboard-${timestamp}.png`;
+
+  if (hasEntries) {
+    const rows: LeaderboardRow[] = result.entries.map((entry, index) => ({
+      rank: offset + index + 1,
+      username: entry.username,
+      wins: entry.wins,
+      teamWins: entry.teamWins,
+      ffaWins: entry.ffaWins,
+      points: entry.totalScore,
+    }));
+
+    imageBuffer = await generateLeaderboardImage(rows);
   }
 
   let footer: string;
@@ -90,85 +102,47 @@ export async function getRankMessage(
     type: ComponentType.Button as const,
     emoji: { name: "🔄" },
     style: ButtonStyle.Secondary as ButtonStyle.Secondary,
-    custom_id: `rank-refresh|${period}|${year}|${month}|${page}|${Date.now()}`,
+    custom_id: `rank-refresh|${period}|${year}|${month}|${page}|${timestamp}`,
   };
 
-  return {
-    embeds: [
-      {
+  const embed = hasEntries
+    ? {
         title,
-        description,
+        image: { url: `attachment://${filename}` },
         footer: { text: footer },
         color: 0xffd700,
-      },
-    ],
-    components: [
-      {
-        type: ComponentType.ActionRow,
-        components: [backButton, pageButton, nextButton, refreshButton],
-      },
-    ],
+      }
+    : {
+        title,
+        description: "No games recorded yet. Win some games to appear on the leaderboard!",
+        footer: { text: footer },
+        color: 0xffd700,
+      };
+
+  const response: MessageDataWithFiles = {
+    message: {
+      embeds: [embed],
+      components: [
+        {
+          type: ComponentType.ActionRow,
+          components: [backButton, pageButton, nextButton, refreshButton],
+        },
+      ],
+    },
   };
-}
 
-interface LeaderboardEntry {
-  username: string;
-  wins: number;
-  teamWins: number;
-  ffaWins: number;
-  totalScore: number;
-}
-
-/**
- * Builds an ASCII table for the leaderboard:
- *
- *   #  | Player   | Wins | Team | FFA | Points
- *  ----+----------+------+------+-----+--------
- *   1  | username |    5 |    3 |   2 |  1,234
- *   2  | user2    |    3 |    2 |   1 |    890
- */
-function buildLeaderboardTable(entries: LeaderboardEntry[], offset: number): string {
-  const headers = ["#", "Player", "Wins", "Team", "FFA", "Points"];
-
-  const rows = entries.map((entry, index) => {
-    const rank = offset + index + 1;
-    const formattedScore = entry.totalScore.toLocaleString("en-US");
-
-    return [
-      String(rank),
-      entry.username,
-      String(entry.wins),
-      String(entry.teamWins),
-      String(entry.ffaWins),
-      formattedScore,
+  if (imageBuffer) {
+    response.message.attachments = [{ id: "0", filename }];
+    response.files = [
+      {
+        name: filename,
+        data: imageBuffer,
+        contentType: "image/png",
+      },
     ];
-  });
+  }
 
-  const colWidths = headers.map((header, i) =>
-    Math.max(header.length, ...rows.map((row) => row[i].length)),
-  );
-
-  const headerRow = headers
-    .map((h, i) => (i === 0 || i === 1 ? padRight(h, colWidths[i]) : padLeft(h, colWidths[i])))
-    .join(" | ");
-
-  const separator = colWidths.map((w) => "-".repeat(w)).join("-+-");
-
-  const dataRows = rows.map((row) =>
-    row
-      .map((cell, i) => (i === 0 || i === 1 ? padRight(cell, colWidths[i]) : padLeft(cell, colWidths[i])))
-      .join(" | "),
-  );
-
-  return "```\n" + [headerRow, separator, ...dataRows].join("\n") + "\n```";
-}
-
-function padRight(str: string, width: number): string {
-  return str + " ".repeat(Math.max(0, width - str.length));
-}
-
-function padLeft(str: string, width: number): string {
-  return " ".repeat(Math.max(0, width - str.length)) + str;
+  return response;
 }
 
 const MONTH_NAMES = [

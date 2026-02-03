@@ -3,6 +3,7 @@ import {
   APIInteractionResponse,
   RESTPostAPIChatInputApplicationCommandsJSONBody,
 } from "discord-api-types/v10";
+import { InteractionResponseWithFiles } from "../handlers/interaction";
 import { Env } from "../types/env";
 
 export interface CommandContext {
@@ -16,5 +17,5 @@ export interface CommandHandler {
     interaction: APIApplicationCommandInteraction,
     env: Env,
     ctx?: CommandContext,
-  ): Promise<APIInteractionResponse>;
+  ): Promise<APIInteractionResponse | InteractionResponseWithFiles>;
 }

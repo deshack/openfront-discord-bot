@@ -6,6 +6,7 @@ import {
 import { handleInteraction } from "./handlers/interaction";
 import { handleScanJobs, handleScheduled } from "./handlers/scheduled";
 import { Env } from "./types/env";
+import { buildMultipartResponse } from "./util/multipart";
 import { verifyDiscordRequest } from "./util/verify";
 
 export default {
@@ -36,6 +37,11 @@ export default {
     const response = await handleInteraction(interaction, env, {
       waitUntil: (promise) => ctx.waitUntil(promise),
     });
+
+    if ("files" in response && response.files && response.files.length > 0) {
+      const { files, ...jsonResponse } = response;
+      return buildMultipartResponse(jsonResponse, files);
+    }
 
     return Response.json(response);
   },

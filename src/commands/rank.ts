@@ -104,7 +104,7 @@ const command: CommandHandler = {
       monthContext = { year, month };
     }
 
-    const message = await getRankMessage(
+    const result = await getRankMessage(
       env.DB,
       guildId,
       period,
@@ -114,7 +114,8 @@ const command: CommandHandler = {
 
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
-      data: message,
+      data: result.message,
+      files: result.files,
     };
   },
 };

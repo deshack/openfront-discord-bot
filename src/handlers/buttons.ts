@@ -1,5 +1,4 @@
 import {
-  APIInteractionResponse,
   APIMessageComponentInteraction,
   InteractionResponseType,
   MessageFlags,
@@ -9,11 +8,12 @@ import { getPublicFFALeaderboardMessage } from "../messages/public_ffa_leaderboa
 import { getRankMessage } from "../messages/rank";
 import { Env } from "../types/env";
 import { LeaderboardPeriod, MonthContext } from "../util/stats";
+import { InteractionResponseWithFiles } from "./interaction";
 
 export async function handleButton(
   interaction: APIMessageComponentInteraction,
   env: Env,
-): Promise<APIInteractionResponse> {
+): Promise<InteractionResponseWithFiles> {
   const customId = interaction.data.custom_id;
 
   if (customId.startsWith("lb-view-page-")) {
@@ -95,11 +95,12 @@ export async function handleButton(
       monthContext = { year, month };
     }
 
-    const message = await getRankMessage(env.DB, guildId, period, page, monthContext);
+    const result = await getRankMessage(env.DB, guildId, period, page, monthContext);
 
     return {
       type: InteractionResponseType.UpdateMessage,
-      data: message,
+      data: result.message,
+      files: result.files,
     };
   }
 
@@ -126,11 +127,12 @@ export async function handleButton(
       monthContext = { year, month };
     }
 
-    const message = await getRankMessage(env.DB, guildId, period, page, monthContext);
+    const result = await getRankMessage(env.DB, guildId, period, page, monthContext);
 
     return {
       type: InteractionResponseType.UpdateMessage,
-      data: message,
+      data: result.message,
+      files: result.files,
     };
   }
 

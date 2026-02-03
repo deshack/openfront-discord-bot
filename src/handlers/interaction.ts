@@ -9,14 +9,19 @@ import {
 } from "discord-api-types/v10";
 import { CommandContext } from "../structures/command";
 import { Env } from "../types/env";
+import { FileAttachment } from "../util/multipart";
 import { handleButton } from "./buttons";
 import { handleCommand } from "./commands";
+
+export type InteractionResponseWithFiles = APIInteractionResponse & {
+  files?: FileAttachment[];
+};
 
 export async function handleInteraction(
   interaction: APIInteraction,
   env: Env,
   ctx?: CommandContext,
-): Promise<APIInteractionResponse> {
+): Promise<InteractionResponseWithFiles> {
   switch (interaction.type) {
     case InteractionType.ApplicationCommand:
       return handleCommand(

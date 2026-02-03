@@ -1,7 +1,6 @@
 import {
   APIApplicationCommandInteraction,
   APIEntitlement,
-  APIInteractionResponse,
   InteractionResponseType,
   MessageFlags,
 } from "discord-api-types/v10";
@@ -10,12 +9,13 @@ import { premiumRequiredResponse } from "../messages/premium";
 import { CommandContext } from "../structures/command";
 import { Env } from "../types/env";
 import { checkPremium } from "../util/premium";
+import { InteractionResponseWithFiles } from "./interaction";
 
 export async function handleCommand(
   interaction: APIApplicationCommandInteraction,
   env: Env,
   ctx?: CommandContext,
-): Promise<APIInteractionResponse> {
+): Promise<InteractionResponseWithFiles> {
   const commandName = interaction.data.name;
   const command = commands[commandName as keyof typeof commands];
 
