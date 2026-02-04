@@ -7,13 +7,6 @@ export interface LeaderboardRow {
   points: number;
 }
 
-function getMedalEmoji(rank: number): string {
-  if (rank === 1) return "🥇";
-  if (rank === 2) return "🥈";
-  if (rank === 3) return "🥉";
-  return String(rank);
-}
-
 export async function generateLeaderboardImage(
   rows: LeaderboardRow[],
 ): Promise<ArrayBuffer> {
@@ -39,7 +32,7 @@ export async function generateLeaderboardImage(
           const borderRadius = isLast ? "0 0 8px 8px" : "0";
           return `
           <div style="display: flex; height: ${rowHeight}px; background-color: ${bgColor}; align-items: center; padding: 0 12px; border-radius: ${borderRadius};">
-            <span style="width: 40px; color: #ffffff; font-size: 14px; text-align: center;">${getMedalEmoji(row.rank)}</span>
+            <span style="width: 40px; color: #ffffff; font-size: 14px; text-align: center;">${row.rank}</span>
             <span style="flex: 1; color: #ffffff; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(row.username)}</span>
             <span style="width: 50px; color: #ffffff; font-size: 14px; text-align: right;">${row.wins}</span>
             <span style="width: 50px; color: #a0a0b0; font-size: 14px; text-align: right;">${row.teamWins}</span>
