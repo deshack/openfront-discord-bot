@@ -1,5 +1,3 @@
-import { ImageResponse } from "workers-og";
-
 export interface LeaderboardRow {
   rank: number;
   username: string;
@@ -53,6 +51,8 @@ export async function generateLeaderboardImage(
         .join("")}
     </div>
   `;
+
+  const { ImageResponse } = await import("workers-og");
 
   const response = new ImageResponse(html, {
     width: 600,
