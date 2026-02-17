@@ -159,15 +159,15 @@ export async function getUsernameMappingsByUsernames(
   const placeholders = usernames.map(() => "?").join(", ");
   const { results } = await db
     .prepare(
-      `SELECT username, discord_user_id FROM username_mappings WHERE guild_id = ? AND username IN (${placeholders})`,
+      `SELECT username, discord_user_id FROM username_mappings WHERE guild_id = ? AND LOWER(username) IN (${placeholders})`,
     )
-    .bind(guildId, ...usernames)
+    .bind(guildId, ...usernames.map((u) => u.toLowerCase()))
     .all<UsernameMappingRow>();
 
   const map = new Map<string, string>();
 
   for (const row of results) {
-    map.set(row.username, row.discord_user_id);
+    map.set(row.username.toLowerCase(), row.discord_user_id);
   }
 
   return map;

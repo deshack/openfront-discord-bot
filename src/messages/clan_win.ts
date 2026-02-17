@@ -6,6 +6,7 @@ import {
   formatDuration,
   TimestampStyles,
 } from "../util/date_format";
+import { stripClanTag } from "../util/db";
 import { gameUrl, mapUrl } from "../util/openfront";
 
 export function getClanWinMessage(
@@ -18,7 +19,7 @@ export function getClanWinMessage(
   const gameStart = new Date(session.gameStart);
 
   const formattedPlayers = clanPlayerUsernames.map((username) => {
-    const discordUserId = usernameMappings?.get(username);
+    const discordUserId = usernameMappings?.get(stripClanTag(username).toLowerCase());
 
     if (discordUserId) {
       return `${username} (<@${discordUserId}>)`;

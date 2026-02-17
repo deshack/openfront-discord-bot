@@ -346,7 +346,7 @@ async function handleClanWins(env: Env): Promise<void> {
         if (gameInfoData) {
           clanPlayerUsernames = gameInfoData.data.info.players
             .filter((player) => player.clanTag === config.clanTag)
-            .map((player) => stripClanTag(player.username));
+            .map((player) => player.username);
 
           map = gameInfoData.data.info.config.gameMap;
           duration = gameInfoData.data.info.duration;
@@ -355,7 +355,7 @@ async function handleClanWins(env: Env): Promise<void> {
         const usernameMappings = await getUsernameMappingsByUsernames(
           env.DB,
           guildId,
-          clanPlayerUsernames,
+          clanPlayerUsernames.map((u) => stripClanTag(u)),
         );
 
         const message = getClanWinMessage(
