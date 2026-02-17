@@ -2,6 +2,110 @@
 
 Discord bot that interacts with the OpenFront API, deployed as a CloudFlare Worker using Discord's HTTP Interactions API.
 
+## Commands
+
+> Commands marked with :star: require a premium subscription.
+
+### `/ping`
+
+Check if the bot is online.
+
+### `/leaderboard`
+
+View the top players or clans.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `type` | Yes | Which leaderboard to show (`players` or `clans`) |
+
+### `/info player`
+
+Look up a player's profile.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `id` | Yes | The player's public ID |
+
+### `/info clan`
+
+Look up a clan's profile.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `tag` | Yes | The clan tag |
+
+### `/rank` :star:
+
+View the clan leaderboard rankings for a given time period.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `period` | No | Time period — `monthly` (default) or `all_time` |
+| `year` | No | Year to view (defaults to current year) |
+| `month` | No | Month to view, 1–12 (defaults to current month) |
+
+### `/ffa register`
+
+Register your Player ID so the bot announces your FFA wins in the current channel.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `player_id` | Yes | Your OpenFront Player ID |
+
+### `/ffa unregister`
+
+Stop receiving FFA win announcements.
+
+### `/ffa status`
+
+Check your current FFA registration status.
+
+### `/setup wins`
+
+Enable clan win announcements in the current channel. Requires **Manage Server** permission.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `tag` | Yes | The clan tag to track |
+
+### `/setup disable`
+
+Disable clan win announcements for this server. Requires **Manage Server** permission.
+
+### `/setup status`
+
+Show the current win announcement configuration. Requires **Manage Server** permission.
+
+### `/in-game-name set`
+
+Map an in-game username to a Discord user so they get mentioned in clan win announcements. Requires **Manage Server** permission.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `user` | Yes | The Discord user to mention |
+| `username` | Yes | The in-game username (clan tags are stripped automatically) |
+
+### `/in-game-name remove`
+
+Remove a username-to-Discord mapping. Requires **Manage Server** permission.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `username` | Yes | The in-game username to unmap |
+
+### `/in-game-name list`
+
+Show all username mappings for this server. Requires **Manage Server** permission.
+
+### `/scan-wins` :star:
+
+Backfill player stats from historical wins. Requires **Manage Server** permission.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `type` | Yes | Which stats to collect (`clan` or `players`) |
+| `start_date` | Yes | Start date in YYYY-MM-DD format |
+
 ## Prerequisites
 
 - Node.js 20+
