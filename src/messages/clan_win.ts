@@ -13,12 +13,23 @@ export function getClanWinMessage(
   clanPlayerUsernames: string[] = [],
   map: string,
   duration?: number,
+  usernameMappings?: Map<string, string>,
 ): MessageData {
   const gameStart = new Date(session.gameStart);
 
+  const formattedPlayers = clanPlayerUsernames.map((username) => {
+    const discordUserId = usernameMappings?.get(username);
+
+    if (discordUserId) {
+      return `${username} (<@${discordUserId}>)`;
+    }
+
+    return username;
+  });
+
   const playersLine =
-    clanPlayerUsernames.length > 0
-      ? `**Players**: ${clanPlayerUsernames.join(", ")}`
+    formattedPlayers.length > 0
+      ? `**Players**: ${formattedPlayers.join(", ")}`
       : "";
 
   const durationLine =

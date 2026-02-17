@@ -76,6 +76,103 @@ export async function listGuildConfigs(
   }));
 }
 
+// ========== Username Mappings ==========
+
+interface UsernameMappingRow {
+  guild_id: string;
+  username: string;
+  discord_user_id: string;
+  created_at: number;
+  updated_at: number;
+}
+
+export function stripClanTag(input: string): string {
+  return input.replace(/^\[.*?\]\s*/, "").trim();
+}
+
+export async function setUsernameMapping(
+  db: D1Database,
+  guildId: string,
+  username: string,
+  discordUserId: string,
+): Promise<void> {
+  const stripped = stripClanTag(username);
+
+  await db
+    .prepare(
+      `INSERT INTO username_mappings (guild_id, username, discord_user_id, created_at, updated_at)
+       VALUES (?, ?, ?, unixepoch(), unixepoch())
+       ON CONFLICT (guild_id, username) DO UPDATE SET
+         discord_user_id = excluded.discord_user_id,
+         updated_at = unixepoch()`,
+    )
+    .bind(guildId, stripped, discordUserId)
+    .run();
+}
+
+export async function removeUsernameMapping(
+  db: D1Database,
+  guildId: string,
+  username: string,
+): Promise<boolean> {
+  const stripped = stripClanTag(username);
+
+  const result = await db
+    .prepare(
+      "DELETE FROM username_mappings WHERE guild_id = ? AND username = ?",
+    )
+    .bind(guildId, stripped)
+    .run();
+
+  return result.meta.changes > 0;
+}
+
+export async function getUsernameMappings(
+  db: D1Database,
+  guildId: string,
+): Promise<Map<string, string>> {
+  const { results } = await db
+    .prepare(
+      "SELECT username, discord_user_id FROM username_mappings WHERE guild_id = ?",
+    )
+    .bind(guildId)
+    .all<UsernameMappingRow>();
+
+  const map = new Map<string, string>();
+
+  for (const row of results) {
+    map.set(row.username, row.discord_user_id);
+  }
+
+  return map;
+}
+
+export async function getUsernameMappingsByUsernames(
+  db: D1Database,
+  guildId: string,
+  usernames: string[],
+): Promise<Map<string, string>> {
+  if (usernames.length === 0) {
+    return new Map();
+  }
+
+  const placeholders = usernames.map(() => "?").join(", ");
+  const { results } = await db
+    .prepare(
+      `SELECT username, discord_user_id FROM username_mappings WHERE guild_id = ? AND username IN (${placeholders})`,
+    )
+    .bind(guildId, ...usernames)
+    .all<UsernameMappingRow>();
+
+  const map = new Map<string, string>();
+
+  for (const row of results) {
+    map.set(row.username, row.discord_user_id);
+  }
+
+  return map;
+}
+
 // ========== Player Registrations ==========
 
 export interface PlayerRegistration {

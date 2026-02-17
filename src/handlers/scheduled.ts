@@ -21,6 +21,7 @@ import {
   getClanSessionsJobBatch,
   getFFAGamesJobBatch,
   getGuildConfig,
+  getUsernameMappingsByUsernames,
   getPlayersJobBatch,
   listAllPlayerRegistrations,
   listGuildConfigs,
@@ -28,6 +29,7 @@ import {
   ScanJobClanSession,
   ScanJobFFAGame,
   ScanJobPlayer,
+  stripClanTag,
 } from "../util/db";
 import { sendChannelMessage } from "../util/discord";
 import {
@@ -344,17 +346,24 @@ async function handleClanWins(env: Env): Promise<void> {
         if (gameInfoData) {
           clanPlayerUsernames = gameInfoData.data.info.players
             .filter((player) => player.clanTag === config.clanTag)
-            .map((player) => player.username);
+            .map((player) => stripClanTag(player.username));
 
           map = gameInfoData.data.info.config.gameMap;
           duration = gameInfoData.data.info.duration;
         }
+
+        const usernameMappings = await getUsernameMappingsByUsernames(
+          env.DB,
+          guildId,
+          clanPlayerUsernames,
+        );
 
         const message = getClanWinMessage(
           win,
           clanPlayerUsernames,
           map,
           duration,
+          usernameMappings,
         );
         const success = await sendChannelMessage(
           env.DISCORD_TOKEN,
