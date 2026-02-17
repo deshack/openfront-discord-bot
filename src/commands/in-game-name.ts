@@ -124,7 +124,6 @@ const command: CommandHandler = {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
           content: `Mapped in-game username **${username}** to <@${discordUserId}>.`,
-          flags: MessageFlags.Ephemeral,
         },
       };
     }
@@ -197,7 +196,6 @@ const command: CommandHandler = {
               description: lines.join("\n"),
             },
           ],
-          flags: MessageFlags.Ephemeral,
         },
       };
     }
