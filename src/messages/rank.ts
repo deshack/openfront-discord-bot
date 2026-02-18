@@ -82,7 +82,7 @@ export async function getRankMessage(
     type: ComponentType.Button as const,
     emoji: { name: "\u2b05\ufe0f" },
     style: ButtonStyle.Primary as ButtonStyle.Primary,
-    custom_id: page === 0 ? `rank|${period}|${year}|${month}|0|${rankingType}` : `rank|${period}|${year}|${month}|${page - 1}|${rankingType}`,
+    custom_id: page === 0 ? "rank-back-disabled" : `rank|${period}|${year}|${month}|${page - 1}|${rankingType}`,
     disabled: page === 0,
   };
 
@@ -98,7 +98,7 @@ export async function getRankMessage(
     type: ComponentType.Button as const,
     emoji: { name: "\u27a1\ufe0f" },
     style: ButtonStyle.Primary as ButtonStyle.Primary,
-    custom_id: isLastPage ? `rank|${period}|${year}|${month}|${page}|${rankingType}` : `rank|${period}|${year}|${month}|${page + 1}|${rankingType}`,
+    custom_id: isLastPage ? "rank-next-disabled" : `rank|${period}|${year}|${month}|${page + 1}|${rankingType}`,
     disabled: isLastPage,
   };
 
