@@ -8,7 +8,7 @@ import {
 } from "discord-api-types/v10";
 import { getRankMessage } from "../messages/rank";
 import { CommandHandler } from "../structures/command";
-import { LeaderboardPeriod, MonthContext } from "../util/stats";
+import { LeaderboardPeriod, MonthContext, RankingType } from "../util/stats";
 
 const command: CommandHandler = {
   data: {
@@ -42,6 +42,16 @@ const command: CommandHandler = {
         min_value: 1,
         max_value: 12,
       },
+      {
+        type: ApplicationCommandOptionType.String,
+        name: "type",
+        description: "Ranking method (defaults to by wins)",
+        required: false,
+        choices: [
+          { name: "By Wins", value: "wins" },
+          { name: "By Score", value: "score" },
+        ],
+      },
     ],
   },
   requiresPremium: true,
@@ -70,9 +80,13 @@ const command: CommandHandler = {
     const monthOption = options.find((o) => o.name === "month") as
       | APIApplicationCommandInteractionDataIntegerOption
       | undefined;
+    const typeOption = options.find((o) => o.name === "type") as
+      | APIApplicationCommandInteractionDataStringOption
+      | undefined;
 
     const period: LeaderboardPeriod =
       (periodOption?.value as LeaderboardPeriod) ?? "all_time";
+    const rankingType: RankingType = (typeOption?.value as RankingType) ?? "wins";
 
     let monthContext: MonthContext | undefined;
     if (period === "monthly" && (yearOption || monthOption)) {
@@ -110,6 +124,7 @@ const command: CommandHandler = {
       period,
       0,
       monthContext,
+      rankingType,
     );
 
     return {

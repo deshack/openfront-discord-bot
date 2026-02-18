@@ -40,9 +40,10 @@ View the clan leaderboard rankings for a given time period.
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `period` | No | Time period — `monthly` (default) or `all_time` |
+| `period` | No | Time period — `monthly` or `all_time` (default) |
 | `year` | No | Year to view (defaults to current year) |
 | `month` | No | Month to view, 1–12 (defaults to current month) |
+| `type` | No | Ranking method — `wins` (default) or `score` |
 
 ### `/ffa register`
 
