@@ -135,7 +135,7 @@ const command: CommandHandler = {
           await patchOriginalResponse(
             env.DISCORD_CLIENT_ID,
             interaction.token,
-            { embeds: result.message.embeds, components: result.message.components },
+            { embeds: result.message.embeds, components: result.message.components, attachments: result.message.attachments },
             result.files,
           );
         } catch (err) {
