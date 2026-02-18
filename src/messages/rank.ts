@@ -7,6 +7,7 @@ import {
   isCurrentMonth,
   LeaderboardPeriod,
   MonthContext,
+  RankingType,
 } from "../util/stats";
 
 const RANK_PAGE_ENTRIES = 10;
@@ -17,6 +18,7 @@ export async function getRankMessage(
   period: LeaderboardPeriod,
   page: number,
   monthContext?: MonthContext,
+  rankingType: RankingType = "wins",
 ): Promise<MessageDataWithFiles> {
   const offset = page * RANK_PAGE_ENTRIES;
   const result = await getLeaderboard(
@@ -26,13 +28,15 @@ export async function getRankMessage(
     RANK_PAGE_ENTRIES,
     offset,
     monthContext,
+    rankingType,
   );
 
   const totalPages = Math.max(1, Math.ceil(result.totalCount / RANK_PAGE_ENTRIES));
   const isLastPage = page >= totalPages - 1;
 
   const periodTitle = period === "monthly" ? getMonthName(monthContext) : "All Time";
-  const title = `Clan Leaderboard - ${periodTitle}`;
+  const rankingLabel = rankingType === "score" ? "By Score" : "By Wins";
+  const title = `Clan Leaderboard - ${periodTitle} · ${rankingLabel}`;
 
   const hasEntries = result.entries.length > 0;
   let imageBuffer: ArrayBuffer | undefined;
@@ -78,7 +82,7 @@ export async function getRankMessage(
     type: ComponentType.Button as const,
     emoji: { name: "\u2b05\ufe0f" },
     style: ButtonStyle.Primary as ButtonStyle.Primary,
-    custom_id: page === 0 ? `rank|${period}|${year}|${month}|0` : `rank|${period}|${year}|${month}|${page - 1}`,
+    custom_id: page === 0 ? `rank|${period}|${year}|${month}|0|${rankingType}` : `rank|${period}|${year}|${month}|${page - 1}|${rankingType}`,
     disabled: page === 0,
   };
 
@@ -94,7 +98,7 @@ export async function getRankMessage(
     type: ComponentType.Button as const,
     emoji: { name: "\u27a1\ufe0f" },
     style: ButtonStyle.Primary as ButtonStyle.Primary,
-    custom_id: isLastPage ? `rank|${period}|${year}|${month}|${page}` : `rank|${period}|${year}|${month}|${page + 1}`,
+    custom_id: isLastPage ? `rank|${period}|${year}|${month}|${page}|${rankingType}` : `rank|${period}|${year}|${month}|${page + 1}|${rankingType}`,
     disabled: isLastPage,
   };
 
@@ -102,7 +106,7 @@ export async function getRankMessage(
     type: ComponentType.Button as const,
     emoji: { name: "🔄" },
     style: ButtonStyle.Secondary as ButtonStyle.Secondary,
-    custom_id: `rank-refresh|${period}|${year}|${month}|${page}|${timestamp}`,
+    custom_id: `rank-refresh|${period}|${year}|${month}|${page}|${timestamp}|${rankingType}`,
   };
 
   const embed = hasEntries

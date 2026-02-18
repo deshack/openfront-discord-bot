@@ -1,6 +1,7 @@
 import { GameMode } from "./api_schemas";
 
 export type LeaderboardPeriod = "monthly" | "all_time";
+export type RankingType = "wins" | "score";
 
 export interface MonthContext {
   year: number;
@@ -98,7 +99,10 @@ export async function getLeaderboard(
   limit: number,
   offset: number,
   monthContext?: MonthContext,
+  rankingType: RankingType = "wins",
 ): Promise<LeaderboardResult> {
+  const orderBy = rankingType === "score" ? "total_score DESC, wins DESC" : "wins DESC, total_score DESC";
+
   if (period === "all_time") {
     const countResult = await db
       .prepare(
@@ -122,7 +126,7 @@ export async function getLeaderboard(
          FROM player_stats
          WHERE guild_id = ?
          GROUP BY guild_id, username
-         ORDER BY wins DESC, total_score DESC
+         ORDER BY ${orderBy}
          LIMIT ? OFFSET ?`,
       )
       .bind(guildId, limit, offset)
@@ -175,7 +179,7 @@ export async function getLeaderboard(
              AND game_start >= ?
              AND game_start < ?
            GROUP BY guild_id, username
-           ORDER BY wins DESC, total_score DESC
+           ORDER BY ${orderBy}
            LIMIT ? OFFSET ?`
         : `SELECT
              username,
@@ -187,7 +191,7 @@ export async function getLeaderboard(
            WHERE guild_id = ?
              AND game_start >= ?
            GROUP BY guild_id, username
-           ORDER BY wins DESC, total_score DESC
+           ORDER BY ${orderBy}
            LIMIT ? OFFSET ?`,
     )
     .bind(...(isPastMonth ? [guildId, start, end, limit, offset] : [guildId, start, limit, offset]))
