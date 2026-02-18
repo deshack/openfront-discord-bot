@@ -250,8 +250,8 @@ async function processFFAGame(
 
     const gameInfo = gameInfoData.data.info;
 
-    if (gameInfo.players.length <= 2) {
-      console.debug(`Game ${game.gameId} is 1v1, skipping`);
+    if (gameInfo.config.rankedType !== null && gameInfo.config.rankedType !== undefined) {
+      console.debug(`Game ${game.gameId} is ranked, skipping`);
       await completeFFAGameJob(env.DB, job.id, game.gameId);
 
       return;
