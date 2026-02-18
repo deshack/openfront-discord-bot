@@ -45,6 +45,14 @@ View the clan leaderboard rankings for a given time period.
 | `month` | No | Month to view, 1–12 (defaults to current month) |
 | `type` | No | Ranking method — `wins` (default) or `score` |
 
+### `/game`
+
+Get a shareable link to an OpenFront game. Works in servers and DMs.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `game-id` | Yes | The Game ID |
+
 ### `/ffa register`
 
 Register your Player ID so the bot announces your FFA wins in the current channel.
