@@ -550,9 +550,10 @@ async function handleFFAWins(env: Env): Promise<void> {
         );
 
         const gameInfo = gameInfoData?.data.info;
-        const isNot1v1 = gameInfo && gameInfo.players.length > 2;
+        const isNotRanked =
+          gameInfo !== undefined && gameInfo.config.rankedType === undefined;
 
-        if (isNot1v1 && gameInfo.winner) {
+        if (isNotRanked && gameInfo.winner) {
           const premiumStatus = await checkPremiumForScheduled(
             env.DB,
             env.DISCORD_TOKEN,
