@@ -8,6 +8,7 @@ import {
 } from "discord-api-types/v10";
 import { getRankMessage } from "../messages/rank";
 import { CommandHandler } from "../structures/command";
+import { patchOriginalResponse } from "../util/discord-webhook";
 import { LeaderboardPeriod, MonthContext, RankingType } from "../util/stats";
 
 const command: CommandHandler = {
@@ -55,7 +56,7 @@ const command: CommandHandler = {
     ],
   },
   requiresPremium: true,
-  async execute(interaction, env) {
+  async execute(interaction, env, ctx) {
     const guildId = interaction.guild_id;
     if (!guildId) {
       return {
@@ -118,20 +119,36 @@ const command: CommandHandler = {
       monthContext = { year, month };
     }
 
-    const result = await getRankMessage(
-      env.DB,
-      guildId,
-      period,
-      0,
-      monthContext,
-      rankingType,
+    if (!ctx) {
+      const result = await getRankMessage(env.DB, guildId, period, 0, monthContext, rankingType);
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: result.message,
+        files: result.files,
+      };
+    }
+
+    ctx.waitUntil(
+      (async () => {
+        try {
+          const result = await getRankMessage(env.DB, guildId, period, 0, monthContext, rankingType);
+          await patchOriginalResponse(
+            env.DISCORD_CLIENT_ID,
+            interaction.token,
+            { embeds: result.message.embeds, components: result.message.components },
+            result.files,
+          );
+        } catch (err) {
+          console.error("Rank follow-up failed:", err);
+          await patchOriginalResponse(env.DISCORD_CLIENT_ID, interaction.token, {
+            content: "There was an error while fetching the leaderboard :(",
+            flags: MessageFlags.Ephemeral,
+          });
+        }
+      })(),
     );
 
-    return {
-      type: InteractionResponseType.ChannelMessageWithSource,
-      data: result.message,
-      files: result.files,
-    };
+    return { type: InteractionResponseType.DeferredChannelMessageWithSource };
   },
 };
 

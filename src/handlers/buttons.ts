@@ -6,13 +6,16 @@ import {
 import { getClanLeaderboardMessage } from "../messages/clan_leaderboard";
 import { getPublicFFALeaderboardMessage } from "../messages/public_ffa_leaderboard";
 import { getRankMessage } from "../messages/rank";
+import { CommandContext } from "../structures/command";
 import { Env } from "../types/env";
+import { patchOriginalResponse } from "../util/discord-webhook";
 import { LeaderboardPeriod, MonthContext, RankingType } from "../util/stats";
 import { InteractionResponseWithFiles } from "./interaction";
 
 export async function handleButton(
   interaction: APIMessageComponentInteraction,
   env: Env,
+  ctx?: CommandContext,
 ): Promise<InteractionResponseWithFiles> {
   const customId = interaction.data.custom_id;
 
@@ -96,13 +99,36 @@ export async function handleButton(
       monthContext = { year, month };
     }
 
-    const result = await getRankMessage(env.DB, guildId, period, page, monthContext, rankingType);
+    if (!ctx) {
+      const result = await getRankMessage(env.DB, guildId, period, page, monthContext, rankingType);
+      return {
+        type: InteractionResponseType.UpdateMessage,
+        data: result.message,
+        files: result.files,
+      };
+    }
 
-    return {
-      type: InteractionResponseType.UpdateMessage,
-      data: result.message,
-      files: result.files,
-    };
+    ctx.waitUntil(
+      (async () => {
+        try {
+          const result = await getRankMessage(env.DB, guildId, period, page, monthContext, rankingType);
+          await patchOriginalResponse(
+            env.DISCORD_CLIENT_ID,
+            interaction.token,
+            { embeds: result.message.embeds, components: result.message.components },
+            result.files,
+          );
+        } catch (err) {
+          console.error("Rank refresh follow-up failed:", err);
+          await patchOriginalResponse(env.DISCORD_CLIENT_ID, interaction.token, {
+            content: "There was an error while refreshing the leaderboard :(",
+            flags: MessageFlags.Ephemeral,
+          });
+        }
+      })(),
+    );
+
+    return { type: InteractionResponseType.DeferredMessageUpdate };
   }
 
   if (customId.startsWith("rank|")) {
@@ -129,13 +155,36 @@ export async function handleButton(
       monthContext = { year, month };
     }
 
-    const result = await getRankMessage(env.DB, guildId, period, page, monthContext, rankingType);
+    if (!ctx) {
+      const result = await getRankMessage(env.DB, guildId, period, page, monthContext, rankingType);
+      return {
+        type: InteractionResponseType.UpdateMessage,
+        data: result.message,
+        files: result.files,
+      };
+    }
 
-    return {
-      type: InteractionResponseType.UpdateMessage,
-      data: result.message,
-      files: result.files,
-    };
+    ctx.waitUntil(
+      (async () => {
+        try {
+          const result = await getRankMessage(env.DB, guildId, period, page, monthContext, rankingType);
+          await patchOriginalResponse(
+            env.DISCORD_CLIENT_ID,
+            interaction.token,
+            { embeds: result.message.embeds, components: result.message.components },
+            result.files,
+          );
+        } catch (err) {
+          console.error("Rank pagination follow-up failed:", err);
+          await patchOriginalResponse(env.DISCORD_CLIENT_ID, interaction.token, {
+            content: "There was an error while fetching the leaderboard page :(",
+            flags: MessageFlags.Ephemeral,
+          });
+        }
+      })(),
+    );
+
+    return { type: InteractionResponseType.DeferredMessageUpdate };
   }
 
   return {

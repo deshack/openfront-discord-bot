@@ -4,10 +4,10 @@ export interface FileAttachment {
   contentType: string;
 }
 
-export function buildMultipartResponse(
+export function buildMultipartBody(
   payload: object,
   files: FileAttachment[],
-): Response {
+): { body: Uint8Array; boundary: string } {
   const boundary = `----FormBoundary${Date.now()}`;
   const parts: Uint8Array[] = [];
   const encoder = new TextEncoder();
@@ -44,7 +44,16 @@ export function buildMultipartResponse(
     offset += part.length;
   }
 
-  return new Response(body, {
+  return { body, boundary };
+}
+
+export function buildMultipartResponse(
+  payload: object,
+  files: FileAttachment[],
+): Response {
+  const { body, boundary } = buildMultipartBody(payload, files);
+
+  return new Response(body.buffer as ArrayBuffer, {
     headers: {
       "Content-Type": `multipart/form-data; boundary=${boundary}`,
     },
