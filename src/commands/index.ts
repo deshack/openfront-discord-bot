@@ -1,4 +1,5 @@
 import ffa from "./ffa";
+import game from "./game";
 import inGameName from "./in-game-name";
 import info from "./info";
 import leaderboard from "./leaderboard";
@@ -9,6 +10,7 @@ import setup from "./setup";
 
 export const commands = {
   ffa,
+  game,
   "in-game-name": inGameName,
   ping,
   leaderboard,
