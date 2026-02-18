@@ -295,6 +295,8 @@ export interface GameConfigRaw {
   disabledUnits: string[];
   playerTeams: number;
   disableNPCs: boolean;
+  rankedType?: string;
+  maxPlayers?: number;
 }
 
 export interface GameInfoRaw {

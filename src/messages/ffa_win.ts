@@ -38,10 +38,14 @@ export function getFFAWinMessage(data: FFAWinData): MessageData {
     TimestampStyles.RelativeTime,
   );
 
-  const is1v1 = totalPlayers === 2;
-  const title = is1v1 ? "1v1 Win!" : "FFA Win!";
+  const isRanked = gameInfo.config.rankedType !== null && gameInfo.config.rankedType !== undefined;
+  const showOpponent = gameInfo.config.maxPlayers === 2;
 
-  const opponent = is1v1
+  const title = isRanked
+    ? `${gameInfo.config.rankedType} Ranked Win!`
+    : "FFA Win!";
+
+  const opponent = showOpponent
     // eslint-disable-next-line
     ? (winnerClientId != null
         ? gameInfo.players.find((p) => p.clientID !== winnerClientId)
@@ -49,7 +53,7 @@ export function getFFAWinMessage(data: FFAWinData): MessageData {
     : undefined;
   const opponentUsername = opponent?.username ?? "Unknown";
 
-  const desc = is1v1
+  const desc = showOpponent
     ? dedent`
       **Map**: ${map}
       **Winner**: ${winnerUsername} (<@${discordUserId}>)
@@ -69,7 +73,7 @@ export function getFFAWinMessage(data: FFAWinData): MessageData {
       [Watch replay](${gameUrl(gameId)})
       `;
 
-  const color = is1v1 ? 0x3498db : 0xffd700;
+  const color = isRanked ? 0x3498db : 0xffd700;
 
   return {
     embeds: [
