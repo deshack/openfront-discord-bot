@@ -7,7 +7,7 @@ import { getClanLeaderboardMessage } from "../messages/clan_leaderboard";
 import { getPublicFFALeaderboardMessage } from "../messages/public_ffa_leaderboard";
 import { getRankMessage } from "../messages/rank";
 import { Env } from "../types/env";
-import { LeaderboardPeriod, MonthContext } from "../util/stats";
+import { LeaderboardPeriod, MonthContext, RankingType } from "../util/stats";
 import { InteractionResponseWithFiles } from "./interaction";
 
 export async function handleButton(
@@ -74,6 +74,7 @@ export async function handleButton(
     const month = parseInt(parts[3]);
     const page = parseInt(parts[4]) || 0;
     const lastRefresh = parseInt(parts[5]) || 0;
+    const rankingType = (parts[6] as RankingType) || "wins";
 
     const now = Date.now();
     const cooldownMs = 30 * 1000;
@@ -95,7 +96,7 @@ export async function handleButton(
       monthContext = { year, month };
     }
 
-    const result = await getRankMessage(env.DB, guildId, period, page, monthContext);
+    const result = await getRankMessage(env.DB, guildId, period, page, monthContext, rankingType);
 
     return {
       type: InteractionResponseType.UpdateMessage,
@@ -121,13 +122,14 @@ export async function handleButton(
     const year = parseInt(parts[2]);
     const month = parseInt(parts[3]);
     const page = parseInt(parts[4]) || 0;
+    const rankingType = (parts[5] as RankingType) || "wins";
 
     let monthContext: MonthContext | undefined;
     if (period === "monthly" && year > 0 && month > 0) {
       monthContext = { year, month };
     }
 
-    const result = await getRankMessage(env.DB, guildId, period, page, monthContext);
+    const result = await getRankMessage(env.DB, guildId, period, page, monthContext, rankingType);
 
     return {
       type: InteractionResponseType.UpdateMessage,
