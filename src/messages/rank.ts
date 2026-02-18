@@ -10,7 +10,7 @@ import {
   RankingType,
 } from "../util/stats";
 
-const RANK_PAGE_ENTRIES = 10;
+const RANK_PAGE_ENTRIES = 25;
 
 export async function getRankMessage(
   db: D1Database,
