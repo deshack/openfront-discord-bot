@@ -142,7 +142,6 @@ const command: CommandHandler = {
           console.error("Rank follow-up failed:", err);
           await patchOriginalResponse(env.DISCORD_CLIENT_ID, interaction.token, {
             content: "There was an error while fetching the leaderboard :(",
-            flags: MessageFlags.Ephemeral,
           });
         }
       })(),
