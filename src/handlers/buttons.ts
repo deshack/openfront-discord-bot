@@ -8,7 +8,7 @@ import { getPublicFFALeaderboardMessage } from "../messages/public_ffa_leaderboa
 import { getRankMessage } from "../messages/rank";
 import { CommandContext } from "../structures/command";
 import { Env } from "../types/env";
-import { patchOriginalResponse } from "../util/discord-webhook";
+import { patchOriginalResponse, postFollowupResponse } from "../util/discord-webhook";
 import { LeaderboardPeriod, MonthContext, RankingType } from "../util/stats";
 import { InteractionResponseWithFiles } from "./interaction";
 
@@ -120,7 +120,7 @@ export async function handleButton(
           );
         } catch (err) {
           console.error("Rank refresh follow-up failed:", err);
-          await patchOriginalResponse(env.DISCORD_CLIENT_ID, interaction.token, {
+          await postFollowupResponse(env.DISCORD_CLIENT_ID, interaction.token, {
             content: "There was an error while refreshing the leaderboard :(",
             flags: MessageFlags.Ephemeral,
           });
@@ -176,7 +176,7 @@ export async function handleButton(
           );
         } catch (err) {
           console.error("Rank pagination follow-up failed:", err);
-          await patchOriginalResponse(env.DISCORD_CLIENT_ID, interaction.token, {
+          await postFollowupResponse(env.DISCORD_CLIENT_ID, interaction.token, {
             content: "There was an error while fetching the leaderboard page :(",
             flags: MessageFlags.Ephemeral,
           });

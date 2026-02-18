@@ -33,3 +33,22 @@ export async function patchOriginalResponse(
     throw new Error(`Discord webhook PATCH failed (${res.status}): ${text}`);
   }
 }
+
+export async function postFollowupResponse(
+  clientId: string,
+  token: string,
+  payload: object,
+): Promise<void> {
+  const url = `${DISCORD_API}/webhooks/${clientId}/${token}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Discord webhook POST failed (${res.status}): ${text}`);
+  }
+}
