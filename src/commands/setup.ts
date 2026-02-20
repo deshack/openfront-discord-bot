@@ -74,7 +74,7 @@ const command: CommandHandler = {
       const tagOption = subcommand.options?.find((o) => o.name === "tag");
       const tag =
         tagOption && "value" in tagOption
-          ? String(tagOption.value).trim()
+          ? String(tagOption.value).trim().toUpperCase()
           : undefined;
 
       if (!tag) {
