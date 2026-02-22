@@ -2,6 +2,8 @@ import {
   APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataStringOption,
   ApplicationCommandOptionType,
+  ApplicationIntegrationType,
+  InteractionContextType,
   InteractionResponseType,
   MessageFlags,
 } from "discord-api-types/v10";
@@ -13,6 +15,8 @@ const command: CommandHandler = {
   data: {
     name: "leaderboard",
     description: "Top players/clans!",
+    integration_types: [ApplicationIntegrationType.GuildInstall],
+    contexts: [InteractionContextType.Guild],
     options: [
       {
         type: ApplicationCommandOptionType.String,

@@ -1,4 +1,6 @@
 import {
+  ApplicationIntegrationType,
+  InteractionContextType,
   InteractionResponseType,
   MessageFlags,
 } from "discord-api-types/v10";
@@ -8,6 +10,8 @@ const command: CommandHandler = {
   data: {
     name: "ping",
     description: "Pong!",
+    integration_types: [ApplicationIntegrationType.GuildInstall],
+    contexts: [InteractionContextType.Guild],
   },
   async execute() {
     return {

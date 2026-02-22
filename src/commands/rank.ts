@@ -3,8 +3,11 @@ import {
   APIApplicationCommandInteractionDataIntegerOption,
   APIApplicationCommandInteractionDataStringOption,
   ApplicationCommandOptionType,
+  ApplicationIntegrationType,
+  InteractionContextType,
   InteractionResponseType,
-  MessageFlags, PermissionFlagsBits,
+  MessageFlags,
+  PermissionFlagsBits,
 } from "discord-api-types/v10";
 import { getRankMessage } from "../messages/rank";
 import { CommandHandler } from "../structures/command";
@@ -15,6 +18,8 @@ const command: CommandHandler = {
   data: {
     name: "rank",
     description: "View the clan leaderboard rankings",
+    integration_types: [ApplicationIntegrationType.GuildInstall],
+    contexts: [InteractionContextType.Guild],
     default_member_permissions: String(PermissionFlagsBits.ManageGuild),
     options: [
       {

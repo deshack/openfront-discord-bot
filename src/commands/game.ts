@@ -2,6 +2,8 @@ import {
   APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataStringOption,
   ApplicationCommandOptionType,
+  ApplicationIntegrationType,
+  InteractionContextType,
   InteractionResponseType,
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
@@ -11,6 +13,8 @@ const command: CommandHandler = {
   data: {
     name: "game",
     description: "Get the link to an OpenFront game by its ID.",
+    integration_types: [ApplicationIntegrationType.GuildInstall],
+    contexts: [InteractionContextType.Guild],
     options: [
       {
         name: "game-id",

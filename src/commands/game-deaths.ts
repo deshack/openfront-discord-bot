@@ -2,6 +2,8 @@ import {
   APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataStringOption,
   ApplicationCommandOptionType,
+  ApplicationIntegrationType,
+  InteractionContextType,
   InteractionResponseType,
   MessageFlags,
 } from "discord-api-types/v10";
@@ -13,6 +15,8 @@ const command: CommandHandler = {
   data: {
     name: "game-deaths",
     description: "List players who died in a game, ordered by elimination turn.",
+    integration_types: [ApplicationIntegrationType.GuildInstall],
+    contexts: [InteractionContextType.Guild],
     options: [
       {
         name: "game-id",

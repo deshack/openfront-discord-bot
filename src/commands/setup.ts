@@ -2,6 +2,8 @@ import {
   APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataSubcommandOption,
   ApplicationCommandOptionType,
+  ApplicationIntegrationType,
+  InteractionContextType,
   InteractionResponseType,
   MessageFlags,
   PermissionFlagsBits,
@@ -13,6 +15,8 @@ const command: CommandHandler = {
   data: {
     name: "setup",
     description: "Configure bot settings for this server",
+    integration_types: [ApplicationIntegrationType.GuildInstall],
+    contexts: [InteractionContextType.Guild],
     default_member_permissions: String(PermissionFlagsBits.ManageGuild),
     dm_permission: false,
     options: [
