@@ -17,6 +17,7 @@ import {
   countPendingFFAGames,
   countPendingPlayers,
   createScanJobFFAGame,
+  deleteGuildConfig,
   failScanJob,
   getClanSessionsJobBatch,
   getFFAGamesJobBatch,
@@ -365,13 +366,21 @@ async function handleClanWins(env: Env): Promise<void> {
           duration,
           usernameMappings,
         );
-        const success = await sendChannelMessage(
+        const result = await sendChannelMessage(
           env.DISCORD_TOKEN,
           config.channelId,
           message,
         );
 
-        if (success) {
+        if (!result.success && result.discordCode === 50001) {
+          console.warn(
+            `Bot removed from guild ${guildId} (Missing Access). Deleting guild config.`,
+          );
+          await deleteGuildConfig(env.DB, guildId);
+          break;
+        }
+
+        if (result.success) {
           await markGamePosted(env.DATA, guildId, win.gameId);
 
           const premiumStatus = await checkPremiumForScheduled(
@@ -513,7 +522,13 @@ async function handleFFAWins(env: Env): Promise<void> {
     return true;
   });
 
+  const removedGuildIds = new Set<string>();
+
   for (const win of uniqueWins) {
+    if (removedGuildIds.has(win.guildId)) {
+      continue;
+    }
+
     try {
       const alreadyPosted = await isFFAGamePosted(
         env.DATA,
@@ -535,13 +550,22 @@ async function handleFFAWins(env: Env): Promise<void> {
         gameId: win.gameId,
         gameInfo: gameInfoData?.data.info,
       });
-      const success = await sendChannelMessage(
+      const result = await sendChannelMessage(
         env.DISCORD_TOKEN,
         win.channelId,
         message,
       );
 
-      if (success) {
+      if (!result.success && result.discordCode === 50001) {
+        console.warn(
+          `Bot removed from guild ${win.guildId} (Missing Access). Deleting guild config.`,
+        );
+        await deleteGuildConfig(env.DB, win.guildId);
+        removedGuildIds.add(win.guildId);
+        continue;
+      }
+
+      if (result.success) {
         await markFFAGamePosted(
           env.DATA,
           win.guildId,

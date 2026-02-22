@@ -4,6 +4,8 @@ const DISCORD_API_BASE = "https://discord.com/api/v10";
 const MAX_RETRIES = 5;
 const BASE_BACKOFF_MS = 1000;
 
+export type SendMessageResult = { success: true } | { success: false; discordCode?: number };
+
 async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -12,7 +14,7 @@ export async function sendChannelMessage(
   token: string,
   channelId: string,
   message: MessageData,
-): Promise<boolean> {
+): Promise<SendMessageResult> {
   const url = `${DISCORD_API_BASE}/channels/${channelId}/messages`;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -26,7 +28,7 @@ export async function sendChannelMessage(
     });
 
     if (response.ok) {
-      return true;
+      return { success: true };
     }
 
     if (response.status === 429) {
@@ -42,16 +44,24 @@ export async function sendChannelMessage(
       continue;
     }
 
+    let discordCode: number | undefined;
+    try {
+      const body = await response.json() as { code?: number };
+      discordCode = body.code;
+    } catch {
+      // ignore parse errors
+    }
+
     console.error(
-      `Failed to send message to channel ${channelId}: ${response.status} ${response.statusText} - body: ${JSON.stringify(message)}`,
+      `Failed to send message to channel ${channelId}: ${response.status} ${response.statusText} (Discord code: ${discordCode}) - body: ${JSON.stringify(message)}`,
     );
 
-    return false;
+    return { success: false, discordCode };
   }
 
   console.error(
     `Exhausted retries for channel ${channelId} after ${MAX_RETRIES} attempts`,
   );
 
-  return false;
+  return { success: false };
 }
