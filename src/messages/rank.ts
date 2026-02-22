@@ -35,7 +35,14 @@ export async function getRankMessage(
   const isLastPage = page >= totalPages - 1;
 
   const periodTitle = period === "monthly" ? getMonthName(monthContext) : "All Time";
-  const rankingLabel = rankingType === "score" ? "By Score" : "By Wins";
+  const rankingLabel =
+    rankingType === "score"
+      ? "By Score"
+      : rankingType === "ffa_wins"
+        ? "By FFA Wins"
+        : rankingType === "team_wins"
+          ? "By Team Wins"
+          : "By Wins";
   const title = `Clan Leaderboard - ${periodTitle} · ${rankingLabel}`;
 
   const hasEntries = result.entries.length > 0;

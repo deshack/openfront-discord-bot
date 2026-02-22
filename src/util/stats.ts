@@ -1,7 +1,7 @@
 import { GameMode } from "./api_schemas";
 
 export type LeaderboardPeriod = "monthly" | "all_time";
-export type RankingType = "wins" | "score";
+export type RankingType = "wins" | "score" | "ffa_wins" | "team_wins";
 
 export interface MonthContext {
   year: number;
@@ -101,7 +101,14 @@ export async function getLeaderboard(
   monthContext?: MonthContext,
   rankingType: RankingType = "wins",
 ): Promise<LeaderboardResult> {
-  const orderBy = rankingType === "score" ? "total_score DESC, wins DESC" : "wins DESC, total_score DESC";
+  const orderBy =
+    rankingType === "score"
+      ? "total_score DESC, wins DESC"
+      : rankingType === "ffa_wins"
+        ? "ffa_wins DESC, wins DESC"
+        : rankingType === "team_wins"
+          ? "team_wins DESC, wins DESC"
+          : "wins DESC, total_score DESC";
 
   if (period === "all_time") {
     const countResult = await db

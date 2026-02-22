@@ -51,6 +51,8 @@ const command: CommandHandler = {
         choices: [
           { name: "By Wins", value: "wins" },
           { name: "By Score", value: "score" },
+          { name: "By FFA Wins", value: "ffa_wins" },
+          { name: "By Team Wins", value: "team_wins" },
         ],
       },
     ],
