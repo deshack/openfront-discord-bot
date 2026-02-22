@@ -2,6 +2,8 @@ import {
   APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataSubcommandOption,
   ApplicationCommandOptionType,
+  ApplicationIntegrationType,
+  InteractionContextType,
   InteractionResponseType,
   MessageFlags,
   PermissionFlagsBits,
@@ -18,6 +20,8 @@ const command: CommandHandler = {
   data: {
     name: "in-game-name",
     description: "Map in-game usernames to Discord users for win mentions",
+    integration_types: [ApplicationIntegrationType.GuildInstall],
+    contexts: [InteractionContextType.Guild],
     default_member_permissions: String(PermissionFlagsBits.ManageGuild),
     dm_permission: false,
     options: [

@@ -2,6 +2,8 @@ import {
   APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataStringOption,
   ApplicationCommandOptionType,
+  ApplicationIntegrationType,
+  InteractionContextType,
   InteractionResponseType,
   MessageFlags,
   PermissionFlagsBits,
@@ -25,6 +27,8 @@ const command: CommandHandler = {
   data: {
     name: "scan-wins",
     description: "Backfill player stats from historical wins (Moderator only)",
+    integration_types: [ApplicationIntegrationType.GuildInstall],
+    contexts: [InteractionContextType.Guild],
     default_member_permissions: String(PermissionFlagsBits.ManageGuild),
     dm_permission: false,
     options: [

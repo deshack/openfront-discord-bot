@@ -2,6 +2,8 @@ import {
   APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataSubcommandOption,
   ApplicationCommandOptionType,
+  ApplicationIntegrationType,
+  InteractionContextType,
   InteractionResponseType,
   MessageFlags,
 } from "discord-api-types/v10";
@@ -16,6 +18,8 @@ const command: CommandHandler = {
   data: {
     name: "ffa",
     description: "Register for FFA win announcements",
+    integration_types: [ApplicationIntegrationType.GuildInstall],
+    contexts: [InteractionContextType.Guild],
     dm_permission: false,
     options: [
       {
