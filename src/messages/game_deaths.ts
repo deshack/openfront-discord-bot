@@ -9,7 +9,7 @@ export function getGameDeathsMessage(info: GameInfo): MessageData {
   const description =
     deadPlayers.length > 0
       ? deadPlayers
-          .map((p) => `**${p.username}** — turn \`${p.stats!.killedAt}\``)
+          .map((p) => `**${p.username}** died at turn \`${p.stats!.killedAt}\``)
           .join("\n")
       : "No dead players found.";
 
