@@ -25,7 +25,8 @@ migrations_dir = "migrations"
 # - Every 5 minutes: Check for new wins to announce
 # - Every minute: Process scan jobs
 [triggers]
-crons = ["*/5 * * * *", "* * * * *"]
+#crons = ["*/5 * * * *", "* * * * *"]
+crons = ["*/5 * * * *"]
 
 [observability]
 [observability.logs]

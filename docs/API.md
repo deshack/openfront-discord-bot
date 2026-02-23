@@ -36,12 +36,22 @@ curl "https://api.openfront.io/public/games?start=2025-10-25T00:00:00Z&end=2025-
 ```json
 [
   {
-    "game": "ABSgwin6",
-    "start": "2025-10-25T00:00:10.526Z",
-    "end": "2025-10-25T00:19:45.187Z",
-    "type": "Singleplayer",
+    "game": "hq9TFKPZ",
+    "start": "2026-02-23T00:00:03.476Z",
+    "end": "2026-02-23T00:24:38.559Z",
+    "type": "Public",
     "mode": "Free For All",
-    "difficulty": "Medium"
+    "difficulty": "Easy",
+    "rankedType": "unranked"
+  },
+  {
+    "game": "dfZZN1kt",
+    "start": "2026-02-23T00:00:40.727Z",
+    "end": "2026-02-23T00:06:31.554Z",
+    "type": "Public",
+    "mode": "Free For All",
+    "difficulty": "Easy",
+    "rankedType": "1v1"
   }
 ]
 ```
