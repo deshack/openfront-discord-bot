@@ -1,6 +1,7 @@
 import ffa from "./ffa";
 import game from "./game";
 import gameDeaths from "./game-deaths";
+import help from "./help";
 import inGameName from "./in-game-name";
 import info from "./info";
 import leaderboard from "./leaderboard";
@@ -13,6 +14,7 @@ export const commands = {
   ffa,
   game,
   "game-deaths": gameDeaths,
+  help,
   "in-game-name": inGameName,
   ping,
   leaderboard,
