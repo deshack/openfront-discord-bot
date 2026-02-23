@@ -13,11 +13,12 @@ const command: CommandHandler = {
     integration_types: [ApplicationIntegrationType.GuildInstall],
     contexts: [InteractionContextType.Guild],
   },
-  async execute() {
+  async execute(_interaction, _env) {
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
       data: {
         flags: MessageFlags.Ephemeral,
+        // Keep in sync with src/commands/index.ts (command registry)
         embeds: [
           {
             title: "OpenFront Bot Help",
@@ -63,7 +64,10 @@ const command: CommandHandler = {
               },
               {
                 name: "Utility",
-                value: "`/ping` — Check bot responsiveness",
+                value: [
+                  "`/ping` — Check bot responsiveness",
+                  "`/help` — List all available commands",
+                ].join("\n"),
               },
             ],
             footer: {
