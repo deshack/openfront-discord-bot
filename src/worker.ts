@@ -4,7 +4,11 @@ import {
   InteractionType,
 } from "discord-api-types/v10";
 import { handleInteraction } from "./handlers/interaction";
-import { handleScanJobs, handleScheduled } from "./handlers/scheduled";
+import {
+  handleClanWins,
+  handleFFAWins,
+  handleScanJobs,
+} from "./handlers/scheduled";
 import { Env } from "./types/env";
 import { buildMultipartResponse } from "./util/multipart";
 import { verifyDiscordRequest } from "./util/verify";
@@ -57,6 +61,12 @@ export default {
       return;
     }
 
-    ctx.waitUntil(handleScheduled(env));
+    if (event.cron === "2-57/5 * * * *") {
+      ctx.waitUntil(handleFFAWins(env));
+
+      return;
+    }
+
+    ctx.waitUntil(handleClanWins(env));
   },
 };

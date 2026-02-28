@@ -22,11 +22,11 @@ database_id = "dc44eb75-0c1f-4720-8225-1f7aab20cb31"
 migrations_dir = "migrations"
 
 # Scheduled tasks:
-# - Every 5 minutes: Check for new wins to announce
+# - Every 5 minutes (at :00,:05,:10…): Check for clan wins
+# - Every 5 minutes offset by 2 min (at :02,:07,:12…): Check for FFA wins
 # - Every minute: Process scan jobs
 [triggers]
-#crons = ["*/5 * * * *", "* * * * *"]
-crons = ["*/5 * * * *"]
+crons = ["*/5 * * * *", "2-57/5 * * * *"]
 
 [observability]
 [observability.logs]

@@ -39,12 +39,11 @@ import {
   markFFAGamePosted,
   markGamePosted,
 } from "../util/kv";
-import { checkPremiumForScheduled } from "../util/premium";
+import {
+  checkPremiumForScheduled,
+  PremiumCheckResult,
+} from "../util/premium";
 import { recordPlayerWin } from "../util/stats";
-
-export async function handleScheduled(env: Env): Promise<void> {
-  await Promise.all([handleClanWins(env), handleFFAWins(env)]);
-}
 
 export async function handleScanJobs(env: Env): Promise<void> {
   console.debug("Running scheduled task for scan jobs.");
@@ -306,7 +305,7 @@ async function processFFAGame(
   }
 }
 
-async function handleClanWins(env: Env): Promise<void> {
+export async function handleClanWins(env: Env): Promise<void> {
   console.debug("Running scheduled task for clan wins.");
 
   const configs = await listGuildConfigs(env.DB);
@@ -321,6 +320,8 @@ async function handleClanWins(env: Env): Promise<void> {
   const startDate = new Date(now.getTime() - 60 * 60 * 1000);
   const start = startDate.toISOString();
   const end = now.toISOString();
+
+  const premiumCache = new Map<string, PremiumCheckResult>();
 
   for (const { guildId, config } of configs) {
     try {
@@ -383,13 +384,16 @@ async function handleClanWins(env: Env): Promise<void> {
         if (result.success) {
           await markGamePosted(env.DATA, guildId, win.gameId);
 
-          const premiumStatus = await checkPremiumForScheduled(
-            env.DB,
-            env.DISCORD_TOKEN,
-            env.DISCORD_CLIENT_ID,
-            env.DISCORD_SKU_ID,
-            guildId,
-          );
+          const premiumStatus =
+            premiumCache.get(guildId) ??
+            (await checkPremiumForScheduled(
+              env.DB,
+              env.DISCORD_TOKEN,
+              env.DISCORD_CLIENT_ID,
+              env.DISCORD_SKU_ID,
+              guildId,
+            ));
+          premiumCache.set(guildId, premiumStatus);
 
           if (premiumStatus.isPremium && clanPlayerUsernames.length > 0) {
             for (const username of clanPlayerUsernames) {
@@ -445,7 +449,7 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-async function handleFFAWins(env: Env): Promise<void> {
+export async function handleFFAWins(env: Env): Promise<void> {
   console.debug("Running scheduled task for FFA wins.");
 
   const guildRegistrations = await listAllPlayerRegistrations(env.DB);
@@ -523,6 +527,7 @@ async function handleFFAWins(env: Env): Promise<void> {
   });
 
   const removedGuildIds = new Set<string>();
+  const premiumCache = new Map<string, PremiumCheckResult>();
 
   for (const win of uniqueWins) {
     if (removedGuildIds.has(win.guildId)) {
@@ -578,13 +583,16 @@ async function handleFFAWins(env: Env): Promise<void> {
           gameInfo !== undefined && gameInfo.config.rankedType === undefined;
 
         if (isNotRanked && gameInfo.winner) {
-          const premiumStatus = await checkPremiumForScheduled(
-            env.DB,
-            env.DISCORD_TOKEN,
-            env.DISCORD_CLIENT_ID,
-            env.DISCORD_SKU_ID,
-            win.guildId,
-          );
+          const premiumStatus =
+            premiumCache.get(win.guildId) ??
+            (await checkPremiumForScheduled(
+              env.DB,
+              env.DISCORD_TOKEN,
+              env.DISCORD_CLIENT_ID,
+              env.DISCORD_SKU_ID,
+              win.guildId,
+            ));
+          premiumCache.set(win.guildId, premiumStatus);
 
           if (premiumStatus.isPremium) {
             const guildConfig = await getGuildConfig(env.DB, win.guildId);
