@@ -321,97 +321,111 @@ export async function handleClanWins(env: Env): Promise<void> {
   const start = startDate.toISOString();
   const end = now.toISOString();
 
+  const configsByClanTag = new Map<string, typeof configs>();
+  for (const entry of configs) {
+    const list = configsByClanTag.get(entry.config.clanTag) ?? [];
+    list.push(entry);
+    configsByClanTag.set(entry.config.clanTag, list);
+  }
+
   const premiumCache = new Map<string, PremiumCheckResult>();
+  const gameInfoCache = new Map<string, Awaited<ReturnType<typeof getGameInfo>>>();
 
-  for (const { guildId, config } of configs) {
-    try {
-      const sessionsData = await getClanSessions(config.clanTag, start, end);
-      if (!sessionsData) {
-        continue;
-      }
+  for (const [clanTag, guildEntries] of configsByClanTag) {
+    const sessionsData = await getClanSessions(clanTag, start, end);
+    if (!sessionsData) {
+      continue;
+    }
 
-      const wins = sessionsData.data.filter((session) => session.hasWon);
+    const wins = sessionsData.data.filter((session) => session.hasWon);
 
-      for (const win of wins) {
-        const alreadyPosted = await isGamePosted(env.DATA, guildId, win.gameId);
-        if (alreadyPosted) {
-          continue;
-        }
+    for (const { guildId, config } of guildEntries) {
+      try {
+        for (const win of wins) {
+          const alreadyPosted = await isGamePosted(env.DATA, guildId, win.gameId);
+          if (alreadyPosted) {
+            continue;
+          }
 
-        const gameInfoData = await getGameInfo(win.gameId, {
-          includeTurns: false,
-        });
+          if (!gameInfoCache.has(win.gameId)) {
+            gameInfoCache.set(
+              win.gameId,
+              await getGameInfo(win.gameId, { includeTurns: false }),
+            );
+          }
+          const gameInfoData = gameInfoCache.get(win.gameId);
 
-        let clanPlayerUsernames: string[] = [];
-        let map: string = "Unknown";
-        let duration: number | undefined;
-        if (gameInfoData) {
-          clanPlayerUsernames = gameInfoData.data.info.players
-            .filter((player) => player.clanTag === config.clanTag)
-            .map((player) => player.username);
+          let clanPlayerUsernames: string[] = [];
+          let map: string = "Unknown";
+          let duration: number | undefined;
+          if (gameInfoData) {
+            clanPlayerUsernames = gameInfoData.data.info.players
+              .filter((player) => player.clanTag === config.clanTag)
+              .map((player) => player.username);
 
-          map = gameInfoData.data.info.config.gameMap;
-          duration = gameInfoData.data.info.duration;
-        }
+            map = gameInfoData.data.info.config.gameMap;
+            duration = gameInfoData.data.info.duration;
+          }
 
-        const usernameMappings = await getUsernameMappingsByUsernames(
-          env.DB,
-          guildId,
-          clanPlayerUsernames.map((u) => stripClanTag(u)),
-        );
-
-        const message = getClanWinMessage(
-          win,
-          clanPlayerUsernames,
-          map,
-          duration,
-          usernameMappings,
-        );
-        const result = await sendChannelMessage(
-          env.DISCORD_TOKEN,
-          config.channelId,
-          message,
-        );
-
-        if (!result.success && result.discordCode === 50001) {
-          console.warn(
-            `Bot removed from guild ${guildId} (Missing Access). Deleting guild config.`,
+          const usernameMappings = await getUsernameMappingsByUsernames(
+            env.DB,
+            guildId,
+            clanPlayerUsernames.map((u) => stripClanTag(u)),
           );
-          await deleteGuildConfig(env.DB, guildId);
-          break;
-        }
 
-        if (result.success) {
-          await markGamePosted(env.DATA, guildId, win.gameId);
+          const message = getClanWinMessage(
+            win,
+            clanPlayerUsernames,
+            map,
+            duration,
+            usernameMappings,
+          );
+          const result = await sendChannelMessage(
+            env.DISCORD_TOKEN,
+            config.channelId,
+            message,
+          );
 
-          const premiumStatus =
-            premiumCache.get(guildId) ??
-            (await checkPremiumForScheduled(
-              env.DB,
-              env.DISCORD_TOKEN,
-              env.DISCORD_CLIENT_ID,
-              env.DISCORD_SKU_ID,
-              guildId,
-            ));
-          premiumCache.set(guildId, premiumStatus);
+          if (!result.success && result.discordCode === 50001) {
+            console.warn(
+              `Bot removed from guild ${guildId} (Missing Access). Deleting guild config.`,
+            );
+            await deleteGuildConfig(env.DB, guildId);
+            break;
+          }
 
-          if (premiumStatus.isPremium && clanPlayerUsernames.length > 0) {
-            for (const username of clanPlayerUsernames) {
-              await recordPlayerWin(
+          if (result.success) {
+            await markGamePosted(env.DATA, guildId, win.gameId);
+
+            const premiumStatus =
+              premiumCache.get(guildId) ??
+              (await checkPremiumForScheduled(
                 env.DB,
+                env.DISCORD_TOKEN,
+                env.DISCORD_CLIENT_ID,
+                env.DISCORD_SKU_ID,
                 guildId,
-                username,
-                win.gameId,
-                GameMode.Team,
-                win.score,
-                win.gameStart,
-              );
+              ));
+            premiumCache.set(guildId, premiumStatus);
+
+            if (premiumStatus.isPremium && clanPlayerUsernames.length > 0) {
+              for (const username of clanPlayerUsernames) {
+                await recordPlayerWin(
+                  env.DB,
+                  guildId,
+                  username,
+                  win.gameId,
+                  GameMode.Team,
+                  win.score,
+                  win.gameStart,
+                );
+              }
             }
           }
         }
+      } catch (error) {
+        console.error(`Error processing clan wins for guild ${guildId}:`, error);
       }
-    } catch (error) {
-      console.error(`Error processing clan wins for guild ${guildId}:`, error);
     }
   }
 }
@@ -465,24 +479,29 @@ export async function handleFFAWins(env: Env): Promise<void> {
   const start = startDate.toISOString();
   const end = now.toISOString();
 
-  const allRegistrations = guildRegistrations.flatMap(
-    ({ guildId, registrations }) =>
-      registrations.map((registration) => ({ guildId, registration })),
-  );
+  const playerToGuilds = new Map<
+    string,
+    { guildId: string; discordUserId: string; channelId: string }[]
+  >();
+  for (const { guildId, registrations } of guildRegistrations) {
+    for (const reg of registrations) {
+      const list = playerToGuilds.get(reg.playerId) ?? [];
+      list.push({ guildId, discordUserId: reg.discordUserId, channelId: reg.channelId });
+      playerToGuilds.set(reg.playerId, list);
+    }
+  }
 
-  const sessionsResults = await mapWithConcurrency(
-    allRegistrations,
+  const uniquePlayerIds = Array.from(playerToGuilds.keys());
+
+  const sessionResults = await mapWithConcurrency(
+    uniquePlayerIds,
     5,
-    async ({ guildId, registration }) => {
+    async (playerId) => {
       try {
-        const sessionsData = await getPlayerSessions(
-          registration.playerId,
-          start,
-          end,
-        );
+        const sessionsData = await getPlayerSessions(playerId, start, end);
 
         if (!sessionsData) {
-          return [];
+          return { playerId, wins: [] };
         }
 
         const ffaWins = sessionsData.data.filter(
@@ -493,25 +512,23 @@ export async function handleFFAWins(env: Env): Promise<void> {
             session.gameStart >= startDate.toISOString(),
         );
 
-        return ffaWins.map((win) => ({
-          guildId,
-          playerId: registration.playerId,
-          discordUserId: registration.discordUserId,
-          channelId: registration.channelId,
-          gameId: win.gameId,
-        }));
+        return { playerId, wins: ffaWins };
       } catch (error) {
-        console.error(
-          `Error fetching sessions for player ${registration.playerId} in guild ${guildId}:`,
-          error,
-        );
+        console.error(`Error fetching sessions for player ${playerId}:`, error);
 
-        return [];
+        return { playerId, wins: [] };
       }
     },
   );
 
-  const allWins = sessionsResults.flat();
+  const allWins: FFAWinToPost[] = [];
+  for (const { playerId, wins } of sessionResults) {
+    for (const win of wins) {
+      for (const { guildId, discordUserId, channelId } of (playerToGuilds.get(playerId) ?? [])) {
+        allWins.push({ guildId, playerId, discordUserId, channelId, gameId: win.gameId });
+      }
+    }
+  }
 
   const dedupeKey = (win: FFAWinToPost) =>
     `${win.guildId}:${win.playerId}:${win.gameId}`;
@@ -528,6 +545,7 @@ export async function handleFFAWins(env: Env): Promise<void> {
 
   const removedGuildIds = new Set<string>();
   const premiumCache = new Map<string, PremiumCheckResult>();
+  const gameInfoCache = new Map<string, Awaited<ReturnType<typeof getGameInfo>>>();
 
   for (const win of uniqueWins) {
     if (removedGuildIds.has(win.guildId)) {
@@ -546,9 +564,13 @@ export async function handleFFAWins(env: Env): Promise<void> {
         continue;
       }
 
-      const gameInfoData = await getGameInfo(win.gameId, {
-        includeTurns: false,
-      });
+      if (!gameInfoCache.has(win.gameId)) {
+        gameInfoCache.set(
+          win.gameId,
+          await getGameInfo(win.gameId, { includeTurns: false }),
+        );
+      }
+      const gameInfoData = gameInfoCache.get(win.gameId);
 
       const message = getFFAWinMessage({
         discordUserId: win.discordUserId,
