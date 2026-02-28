@@ -318,7 +318,7 @@ async function handleClanWins(env: Env): Promise<void> {
   }
 
   const now = new Date();
-  const startDate = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+  const startDate = new Date(now.getTime() - 60 * 60 * 1000);
   const start = startDate.toISOString();
   const end = now.toISOString();
 
@@ -457,7 +457,7 @@ async function handleFFAWins(env: Env): Promise<void> {
   }
 
   const now = new Date();
-  const startDate = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+  const startDate = new Date(now.getTime() - 60 * 60 * 1000);
   const start = startDate.toISOString();
   const end = now.toISOString();
 
