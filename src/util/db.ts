@@ -173,6 +173,21 @@ export async function getUsernameMappingsByUsernames(
   return map;
 }
 
+export async function getUsernamesByDiscordUser(
+  db: D1Database,
+  guildId: string,
+  discordUserId: string,
+): Promise<string[]> {
+  const { results } = await db
+    .prepare(
+      "SELECT username FROM username_mappings WHERE guild_id = ? AND discord_user_id = ? ORDER BY username ASC",
+    )
+    .bind(guildId, discordUserId)
+    .all<Pick<UsernameMappingRow, "username">>();
+
+  return results.map((row) => row.username);
+}
+
 // ========== Player Registrations ==========
 
 export interface PlayerRegistration {
