@@ -31,6 +31,7 @@ import {
   ScanJobFFAGame,
   ScanJobPlayer,
   stripClanTag,
+  unregisterPlayer,
 } from "../util/db";
 import { sendChannelMessage } from "../util/discord";
 import {
@@ -585,10 +586,9 @@ export async function handleFFAWins(env: Env): Promise<void> {
 
       if (!result.success && result.discordCode === 50001) {
         console.warn(
-          `Bot removed from guild ${win.guildId} (Missing Access). Deleting guild config.`,
+          `Missing Access for player ${win.discordUserId} in guild ${win.guildId}. Unregistering player.`,
         );
-        await deleteGuildConfig(env.DB, win.guildId);
-        removedGuildIds.add(win.guildId);
+        await unregisterPlayer(env.DB, win.guildId, win.discordUserId);
         continue;
       }
 
