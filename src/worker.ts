@@ -4,12 +4,14 @@ import {
   InteractionType,
 } from "discord-api-types/v10";
 import { handleInteraction } from "./handlers/interaction";
+import { handleWinsQueue } from "./handlers/queue";
 import {
   handleClanWins,
   handleFFAWins,
   handleScanJobs,
 } from "./handlers/scheduled";
 import { Env } from "./types/env";
+import { WinsQueueMessage } from "./types/queue";
 import { buildMultipartResponse } from "./util/multipart";
 import { verifyDiscordRequest } from "./util/verify";
 
@@ -68,5 +70,13 @@ export default {
     }
 
     ctx.waitUntil(handleClanWins(env));
+  },
+
+  async queue(
+    batch: MessageBatch<WinsQueueMessage>,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<void> {
+    ctx.waitUntil(handleWinsQueue(batch, env));
   },
 };

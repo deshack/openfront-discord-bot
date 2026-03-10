@@ -76,6 +76,42 @@ export async function listGuildConfigs(
   }));
 }
 
+export async function getGuildConfigsByClanTag(
+  db: D1Database,
+  clanTag: string,
+): Promise<{ guildId: string; config: GuildConfig }[]> {
+  const { results } = await db
+    .prepare("SELECT guild_id, clan_tag, channel_id FROM guild_configs WHERE clan_tag = ?")
+    .bind(clanTag)
+    .all<GuildConfigRow>();
+
+  return results.map((row) => ({
+    guildId: row.guild_id,
+    config: {
+      clanTag: row.clan_tag,
+      channelId: row.channel_id,
+    },
+  }));
+}
+
+export async function getRegistrationsByPlayerId(
+  db: D1Database,
+  playerId: string,
+): Promise<{ guildId: string; discordUserId: string; channelId: string }[]> {
+  const { results } = await db
+    .prepare(
+      "SELECT guild_id, discord_user_id, channel_id FROM player_registrations WHERE player_id = ?",
+    )
+    .bind(playerId)
+    .all<PlayerRegistrationRow>();
+
+  return results.map((row) => ({
+    guildId: row.guild_id,
+    discordUserId: row.discord_user_id,
+    channelId: row.channel_id,
+  }));
+}
+
 // ========== Username Mappings ==========
 
 interface UsernameMappingRow {

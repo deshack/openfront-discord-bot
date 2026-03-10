@@ -1,3 +1,5 @@
+import type { WinsQueueMessage } from './queue';
+
 export interface Env {
   DISCORD_TOKEN: string;
   DISCORD_PUBLIC_KEY: string;
@@ -5,4 +7,5 @@ export interface Env {
   DISCORD_SKU_ID: string;
   DATA: KVNamespace;
   DB: D1Database;
+  WINS_QUEUE: Queue<WinsQueueMessage>;
 }
