@@ -1,7 +1,7 @@
 import { getClanWinMessage } from "../messages/clan_win";
 import { getFFAWinMessage } from "../messages/ffa_win";
 import { Env } from "../types/env";
-import { WinsQueueMessage } from "../types/queue";
+import { ClanWinsMessage, FFAWinsMessage } from "../types/queue";
 import { GameMode, GameType } from "../util/api_schemas";
 import { getClanSessions, getGameInfo, getPlayerSessions } from "../util/api_util";
 import {
@@ -23,20 +23,35 @@ import {
 import { checkPremiumForScheduled, PremiumCheckResult } from "../util/premium";
 import { recordPlayerWin } from "../util/stats";
 
-export async function handleWinsQueue(
-  batch: MessageBatch<WinsQueueMessage>,
+export async function handleClanWinsQueue(
+  batch: MessageBatch<ClanWinsMessage>,
   env: Env,
 ): Promise<void> {
   for (const message of batch.messages) {
     try {
-      if (message.body.type === 'clan') {
-        await processClanTag(message.body.clanTag, message.body.start, message.body.end, env);
-      } else {
-        await processPlayer(message.body.playerId, message.body.start, message.body.end, env);
+      for (const clanTag of message.body.clanTags) {
+        await processClanTag(clanTag, message.body.start, message.body.end, env);
       }
       message.ack();
     } catch (error) {
-      console.error(`Failed to process queue message:`, message.body, error);
+      console.error(`Failed to process clan wins queue message:`, message.body, error);
+      message.retry();
+    }
+  }
+}
+
+export async function handleFFAWinsQueue(
+  batch: MessageBatch<FFAWinsMessage>,
+  env: Env,
+): Promise<void> {
+  for (const message of batch.messages) {
+    try {
+      for (const playerId of message.body.playerIds) {
+        await processPlayer(playerId, message.body.start, message.body.end, env);
+      }
+      message.ack();
+    } catch (error) {
+      console.error(`Failed to process FFA wins queue message:`, message.body, error);
       message.retry();
     }
   }

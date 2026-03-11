@@ -1,4 +1,4 @@
-import type { WinsQueueMessage } from './queue';
+import type { ClanWinsMessage, FFAWinsMessage } from './queue';
 
 export interface Env {
   DISCORD_TOKEN: string;
@@ -7,5 +7,6 @@ export interface Env {
   DISCORD_SKU_ID: string;
   DATA: KVNamespace;
   DB: D1Database;
-  WINS_QUEUE: Queue<WinsQueueMessage>;
+  CLAN_WINS_QUEUE: Queue<ClanWinsMessage>;
+  FFA_WINS_QUEUE: Queue<FFAWinsMessage>;
 }

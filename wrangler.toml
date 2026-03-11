@@ -29,11 +29,22 @@ migrations_dir = "migrations"
 crons = ["*/5 * * * *", "2-57/5 * * * *"]
 
 [[queues.producers]]
-queue = "wins-jobs"
-binding = "WINS_QUEUE"
+queue = "clan-wins-queue"
+binding = "CLAN_WINS_QUEUE"
+
+[[queues.producers]]
+queue = "ffa-wins-queue"
+binding = "FFA_WINS_QUEUE"
 
 [[queues.consumers]]
-queue = "wins-jobs"
+queue = "clan-wins-queue"
+max_batch_size = 1
+max_batch_timeout = 0
+max_retries = 3
+max_concurrency = 5
+
+[[queues.consumers]]
+queue = "ffa-wins-queue"
 max_batch_size = 1
 max_batch_timeout = 0
 max_retries = 3

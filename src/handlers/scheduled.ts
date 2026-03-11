@@ -1,5 +1,10 @@
 import { Env } from "../types/env";
 import type { ClanWinsMessage, FFAWinsMessage } from "../types/queue";
+
+const DAILY_QUEUE_LIMIT = 10_000;
+const OPS_PER_MESSAGE = 2;
+const RUNS_PER_DAY = 288; // every 5 min
+const MAX_MESSAGES_PER_RUN = Math.floor(DAILY_QUEUE_LIMIT / (OPS_PER_MESSAGE * RUNS_PER_DAY)); // = 17
 import { GameMode, GameType } from "../util/api_schemas";
 import { getGameInfo, getPlayerSessions } from "../util/api_util";
 import {
@@ -303,15 +308,21 @@ export async function handleClanWins(env: Env): Promise<void> {
 
   const clanTags = [...new Set(configs.map((c) => c.config.clanTag))];
 
-  for (let i = 0; i < clanTags.length; i += 100) {
-    await env.WINS_QUEUE.sendBatch(
-      clanTags.slice(i, i + 100).map((clanTag) => ({
-        body: { type: 'clan', clanTag, start, end } as ClanWinsMessage,
+  const batchSize = Math.ceil(clanTags.length / MAX_MESSAGES_PER_RUN);
+  const chunks: string[][] = [];
+  for (let i = 0; i < clanTags.length; i += batchSize) {
+    chunks.push(clanTags.slice(i, i + batchSize));
+  }
+
+  for (let i = 0; i < chunks.length; i += 100) {
+    await env.CLAN_WINS_QUEUE.sendBatch(
+      chunks.slice(i, i + 100).map((tags) => ({
+        body: { clanTags: tags, start, end } satisfies ClanWinsMessage,
       })),
     );
   }
 
-  console.info(`Dispatched ${clanTags.length} clan win messages to queue.`);
+  console.info(`Dispatched ${chunks.length} clan win messages to queue (${clanTags.length} tags total).`);
 }
 
 export async function handleFFAWins(env: Env): Promise<void> {
@@ -337,13 +348,19 @@ export async function handleFFAWins(env: Env): Promise<void> {
   }
 
   const ids = [...playerIds];
-  for (let i = 0; i < ids.length; i += 100) {
-    await env.WINS_QUEUE.sendBatch(
-      ids.slice(i, i + 100).map((playerId) => ({
-        body: { type: 'ffa', playerId, start, end } as FFAWinsMessage,
+  const batchSize = Math.ceil(ids.length / MAX_MESSAGES_PER_RUN);
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += batchSize) {
+    chunks.push(ids.slice(i, i + batchSize));
+  }
+
+  for (let i = 0; i < chunks.length; i += 100) {
+    await env.FFA_WINS_QUEUE.sendBatch(
+      chunks.slice(i, i + 100).map((pids) => ({
+        body: { playerIds: pids, start, end } satisfies FFAWinsMessage,
       })),
     );
   }
 
-  console.info(`Dispatched ${ids.length} FFA player messages to queue.`);
+  console.info(`Dispatched ${chunks.length} FFA player messages to queue (${ids.length} players total).`);
 }
