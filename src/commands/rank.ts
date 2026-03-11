@@ -1,7 +1,7 @@
 import {
-  APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataIntegerOption,
   APIApplicationCommandInteractionDataStringOption,
+  APIChatInputApplicationCommandInteraction,
   ApplicationCommandOptionType,
   ApplicationIntegrationType,
   InteractionContextType,
@@ -94,7 +94,8 @@ const command: CommandHandler = {
 
     const period: LeaderboardPeriod =
       (periodOption?.value as LeaderboardPeriod) ?? "all_time";
-    const rankingType: RankingType = (typeOption?.value as RankingType) ?? "wins";
+    const rankingType: RankingType =
+      (typeOption?.value as RankingType) ?? "wins";
 
     let monthContext: MonthContext | undefined;
     if (period === "monthly" && (yearOption || monthOption)) {
@@ -127,7 +128,14 @@ const command: CommandHandler = {
     }
 
     if (!ctx) {
-      const result = await getRankMessage(env.DB, guildId, period, 0, monthContext, rankingType);
+      const result = await getRankMessage(
+        env.DB,
+        guildId,
+        period,
+        0,
+        monthContext,
+        rankingType,
+      );
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: result.message,
@@ -138,18 +146,33 @@ const command: CommandHandler = {
     ctx.waitUntil(
       (async () => {
         try {
-          const result = await getRankMessage(env.DB, guildId, period, 0, monthContext, rankingType);
+          const result = await getRankMessage(
+            env.DB,
+            guildId,
+            period,
+            0,
+            monthContext,
+            rankingType,
+          );
           await patchOriginalResponse(
             env.DISCORD_CLIENT_ID,
             interaction.token,
-            { embeds: result.message.embeds, components: result.message.components, attachments: result.message.attachments },
+            {
+              embeds: result.message.embeds,
+              components: result.message.components,
+              attachments: result.message.attachments,
+            },
             result.files,
           );
         } catch (err) {
           console.error("Rank follow-up failed:", err);
-          await patchOriginalResponse(env.DISCORD_CLIENT_ID, interaction.token, {
-            content: "There was an error while fetching the leaderboard :(",
-          });
+          await patchOriginalResponse(
+            env.DISCORD_CLIENT_ID,
+            interaction.token,
+            {
+              content: "There was an error while fetching the leaderboard :(",
+            },
+          );
         }
       })(),
     );

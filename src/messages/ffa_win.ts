@@ -31,14 +31,18 @@ export function getFFAWinMessage(data: FFAWinData): MessageData {
 
   const map = gameInfo.config.gameMap;
   // eslint-disable-next-line
-  const totalPlayers = gameInfo.players.filter((player) => player.stats != null).length;
+  const totalPlayers = gameInfo.players.filter(
+    (player) => player.stats != null,
+  ).length;
   const duration = formatDuration(gameInfo.duration);
   const startedAt = dateToDiscordTimestamp(
     gameInfo.start,
     TimestampStyles.RelativeTime,
   );
 
-  const isRanked = gameInfo.config.rankedType !== null && gameInfo.config.rankedType !== undefined;
+  const isRanked =
+    gameInfo.config.rankedType !== null &&
+    gameInfo.config.rankedType !== undefined;
   const showOpponent = gameInfo.config.maxPlayers === 2;
 
   const title = isRanked
@@ -46,10 +50,10 @@ export function getFFAWinMessage(data: FFAWinData): MessageData {
     : "FFA Win!";
 
   const opponent = showOpponent
-    // eslint-disable-next-line
-    ? (winnerClientId != null
-        ? gameInfo.players.find((p) => p.clientID !== winnerClientId)
-        : undefined)
+    ? // eslint-disable-next-line
+      winnerClientId != null
+      ? gameInfo.players.find((p) => p.clientID !== winnerClientId)
+      : undefined
     : undefined;
   const opponentUsername = opponent?.username ?? "Unknown";
 

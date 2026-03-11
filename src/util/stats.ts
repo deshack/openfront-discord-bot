@@ -39,7 +39,10 @@ interface CountRow {
   count: number;
 }
 
-export function getMonthTimestampRange(context?: MonthContext): { start: number; end: number } {
+export function getMonthTimestampRange(context?: MonthContext): {
+  start: number;
+  end: number;
+} {
   const now = new Date();
   const year = context?.year ?? now.getUTCFullYear();
   const month = context?.month ?? now.getUTCMonth() + 1;
@@ -60,7 +63,10 @@ export function isCurrentMonth(context?: MonthContext): boolean {
 
   const now = new Date();
 
-  return context.year === now.getUTCFullYear() && context.month === now.getUTCMonth() + 1;
+  return (
+    context.year === now.getUTCFullYear() &&
+    context.month === now.getUTCMonth() + 1
+  );
 }
 
 export function getEndOfMonth(context?: MonthContext): Date {
@@ -201,7 +207,11 @@ export async function getLeaderboard(
            ORDER BY ${orderBy}
            LIMIT ? OFFSET ?`,
     )
-    .bind(...(isPastMonth ? [guildId, start, end, limit, offset] : [guildId, start, limit, offset]))
+    .bind(
+      ...(isPastMonth
+        ? [guildId, start, end, limit, offset]
+        : [guildId, start, limit, offset]),
+    )
     .all<LeaderboardRow>();
 
   return {
@@ -222,7 +232,8 @@ export async function getPlayerRank(
   username: string,
   period: LeaderboardPeriod,
 ): Promise<PlayerRank | null> {
-  const startTimestamp = period === "monthly" ? getMonthTimestampRange().start : 0;
+  const startTimestamp =
+    period === "monthly" ? getMonthTimestampRange().start : 0;
 
   const playerStats = await db
     .prepare(

@@ -4,7 +4,9 @@ const DISCORD_API_BASE = "https://discord.com/api/v10";
 const MAX_RETRIES = 5;
 const BASE_BACKOFF_MS = 1000;
 
-export type SendMessageResult = { success: true } | { success: false; discordCode?: number };
+export type SendMessageResult =
+  | { success: true }
+  | { success: false; discordCode?: number };
 
 async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -46,7 +48,7 @@ export async function sendChannelMessage(
 
     let discordCode: number | undefined;
     try {
-      const body = await response.json() as { code?: number };
+      const body = (await response.json()) as { code?: number };
       discordCode = body.code;
     } catch {
       // ignore parse errors

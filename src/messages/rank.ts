@@ -31,10 +31,14 @@ export async function getRankMessage(
     rankingType,
   );
 
-  const totalPages = Math.max(1, Math.ceil(result.totalCount / RANK_PAGE_ENTRIES));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(result.totalCount / RANK_PAGE_ENTRIES),
+  );
   const isLastPage = page >= totalPages - 1;
 
-  const periodTitle = period === "monthly" ? getMonthName(monthContext) : "All Time";
+  const periodTitle =
+    period === "monthly" ? getMonthName(monthContext) : "All Time";
   const rankingLabel =
     rankingType === "score"
       ? "By Score"
@@ -89,7 +93,10 @@ export async function getRankMessage(
     type: ComponentType.Button as const,
     emoji: { name: "\u2b05\ufe0f" },
     style: ButtonStyle.Primary as ButtonStyle.Primary,
-    custom_id: page === 0 ? "rank-back-disabled" : `rank|${period}|${year}|${month}|${page - 1}|${rankingType}`,
+    custom_id:
+      page === 0
+        ? "rank-back-disabled"
+        : `rank|${period}|${year}|${month}|${page - 1}|${rankingType}`,
     disabled: page === 0,
   };
 
@@ -105,7 +112,9 @@ export async function getRankMessage(
     type: ComponentType.Button as const,
     emoji: { name: "\u27a1\ufe0f" },
     style: ButtonStyle.Primary as ButtonStyle.Primary,
-    custom_id: isLastPage ? "rank-next-disabled" : `rank|${period}|${year}|${month}|${page + 1}|${rankingType}`,
+    custom_id: isLastPage
+      ? "rank-next-disabled"
+      : `rank|${period}|${year}|${month}|${page + 1}|${rankingType}`,
     disabled: isLastPage,
   };
 
@@ -125,7 +134,8 @@ export async function getRankMessage(
       }
     : {
         title,
-        description: "No games recorded yet. Win some games to appear on the leaderboard!",
+        description:
+          "No games recorded yet. Win some games to appear on the leaderboard!",
         footer: { text: footer },
         color: 0xffd700,
       };
@@ -157,8 +167,18 @@ export async function getRankMessage(
 }
 
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 function getMonthName(context?: MonthContext): string {
@@ -168,4 +188,3 @@ function getMonthName(context?: MonthContext): string {
 
   return `${MONTH_NAMES[month - 1]} ${year}`;
 }
-

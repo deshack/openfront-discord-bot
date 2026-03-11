@@ -1,6 +1,6 @@
 import {
-  APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataSubcommandOption,
+  APIChatInputApplicationCommandInteraction,
   ApplicationCommandOptionType,
   ApplicationIntegrationType,
   InteractionContextType,
@@ -9,9 +9,9 @@ import {
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
 import {
+  getPlayerRegistration,
   registerPlayer,
   unregisterPlayer,
-  getPlayerRegistration,
 } from "../util/db";
 
 const PLAYER_ID_REGEX = /^[a-zA-Z0-9]{8}$/;
@@ -27,7 +27,8 @@ const command: CommandHandler = {
       {
         type: ApplicationCommandOptionType.Subcommand,
         name: "register",
-        description: "Register your Player ID for FFA win tracking in this channel",
+        description:
+          "Register your Player ID for FFA win tracking in this channel",
         options: [
           {
             type: ApplicationCommandOptionType.String,
@@ -52,9 +53,8 @@ const command: CommandHandler = {
   async execute(interaction, env) {
     const chatInteraction =
       interaction as APIChatInputApplicationCommandInteraction;
-    const options =
-      chatInteraction.data
-        .options as APIApplicationCommandInteractionDataSubcommandOption[];
+    const options = chatInteraction.data
+      .options as APIApplicationCommandInteractionDataSubcommandOption[];
     const subcommand = options?.[0];
 
     const guildId = chatInteraction.guild_id;
@@ -78,7 +78,8 @@ const command: CommandHandler = {
       };
     }
 
-    const discordUserId = chatInteraction.member?.user?.id ?? chatInteraction.user?.id;
+    const discordUserId =
+      chatInteraction.member?.user?.id ?? chatInteraction.user?.id;
     if (!discordUserId) {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
@@ -90,7 +91,9 @@ const command: CommandHandler = {
     }
 
     if (subcommand.name === "register") {
-      const playerIdOption = subcommand.options?.find((o) => o.name === "player_id");
+      const playerIdOption = subcommand.options?.find(
+        (o) => o.name === "player_id",
+      );
       const playerId =
         playerIdOption && "value" in playerIdOption
           ? String(playerIdOption.value).trim()
@@ -117,7 +120,8 @@ const command: CommandHandler = {
         };
       }
 
-      const channelId = chatInteraction.channel?.id ?? chatInteraction.channel_id;
+      const channelId =
+        chatInteraction.channel?.id ?? chatInteraction.channel_id;
       if (!channelId) {
         return {
           type: InteractionResponseType.ChannelMessageWithSource,
@@ -145,7 +149,8 @@ const command: CommandHandler = {
         return {
           type: InteractionResponseType.ChannelMessageWithSource,
           data: {
-            content: "You are not registered for FFA win tracking in this server.",
+            content:
+              "You are not registered for FFA win tracking in this server.",
             flags: MessageFlags.Ephemeral,
           },
         };
@@ -154,20 +159,26 @@ const command: CommandHandler = {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
-          content: "FFA win tracking disabled. Your wins will no longer be announced.",
+          content:
+            "FFA win tracking disabled. Your wins will no longer be announced.",
           flags: MessageFlags.Ephemeral,
         },
       };
     }
 
     if (subcommand.name === "status") {
-      const registration = await getPlayerRegistration(env.DB, guildId, discordUserId);
+      const registration = await getPlayerRegistration(
+        env.DB,
+        guildId,
+        discordUserId,
+      );
 
       if (!registration) {
         return {
           type: InteractionResponseType.ChannelMessageWithSource,
           data: {
-            content: "You are not registered for FFA win tracking. Use `/ffa register <player_id>` to enable.",
+            content:
+              "You are not registered for FFA win tracking. Use `/ffa register <player_id>` to enable.",
             flags: MessageFlags.Ephemeral,
           },
         };

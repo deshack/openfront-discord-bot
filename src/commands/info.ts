@@ -1,6 +1,6 @@
 import {
-  APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataSubcommandOption,
+  APIChatInputApplicationCommandInteraction,
   ApplicationCommandOptionType,
   ApplicationIntegrationType,
   InteractionContextType,
@@ -49,9 +49,8 @@ const command: CommandHandler = {
   async execute(interaction, env) {
     const chatInteraction =
       interaction as APIChatInputApplicationCommandInteraction;
-    const options =
-      chatInteraction.data
-        .options as APIApplicationCommandInteractionDataSubcommandOption[];
+    const options = chatInteraction.data
+      .options as APIApplicationCommandInteractionDataSubcommandOption[];
     const subcommand = options?.[0];
 
     if (!subcommand) {

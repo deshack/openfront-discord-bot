@@ -3,7 +3,11 @@ import { getFFAWinMessage } from "../messages/ffa_win";
 import { Env } from "../types/env";
 import { ClanWinsMessage, FFAWinsMessage } from "../types/queue";
 import { GameMode, GameType } from "../util/api_schemas";
-import { getClanSessions, getGameInfo, getPlayerSessions } from "../util/api_util";
+import {
+  getClanSessions,
+  getGameInfo,
+  getPlayerSessions,
+} from "../util/api_util";
 import {
   deleteGuildConfig,
   getGuildConfig,
@@ -30,11 +34,20 @@ export async function handleClanWinsQueue(
   for (const message of batch.messages) {
     try {
       for (const clanTag of message.body.clanTags) {
-        await processClanTag(clanTag, message.body.start, message.body.end, env);
+        await processClanTag(
+          clanTag,
+          message.body.start,
+          message.body.end,
+          env,
+        );
       }
       message.ack();
     } catch (error) {
-      console.error(`Failed to process clan wins queue message:`, message.body, error);
+      console.error(
+        `Failed to process clan wins queue message:`,
+        message.body,
+        error,
+      );
       message.retry();
     }
   }
@@ -47,11 +60,20 @@ export async function handleFFAWinsQueue(
   for (const message of batch.messages) {
     try {
       for (const playerId of message.body.playerIds) {
-        await processPlayer(playerId, message.body.start, message.body.end, env);
+        await processPlayer(
+          playerId,
+          message.body.start,
+          message.body.end,
+          env,
+        );
       }
       message.ack();
     } catch (error) {
-      console.error(`Failed to process FFA wins queue message:`, message.body, error);
+      console.error(
+        `Failed to process FFA wins queue message:`,
+        message.body,
+        error,
+      );
       message.retry();
     }
   }
@@ -77,7 +99,10 @@ async function processClanTag(
   const wins = sessionsData.data.filter((session) => session.hasWon);
 
   const premiumCache = new Map<string, PremiumCheckResult>();
-  const gameInfoCache = new Map<string, Awaited<ReturnType<typeof getGameInfo>>>();
+  const gameInfoCache = new Map<
+    string,
+    Awaited<ReturnType<typeof getGameInfo>>
+  >();
 
   for (const { guildId, config } of guildEntries) {
     try {
@@ -100,7 +125,10 @@ async function processClanTag(
         let duration: number | undefined;
         if (gameInfoData) {
           clanPlayerUsernames = gameInfoData.data.info.players
-            .filter((player) => player.clanTag === config.clanTag && player.stats !== undefined)
+            .filter(
+              (player) =>
+                player.clanTag === config.clanTag && player.stats !== undefined,
+            )
             .map((player) => player.username);
 
           map = gameInfoData.data.info.config.gameMap;
@@ -202,7 +230,10 @@ async function processPlayer(
 
   const removedGuildIds = new Set<string>();
   const premiumCache = new Map<string, PremiumCheckResult>();
-  const gameInfoCache = new Map<string, Awaited<ReturnType<typeof getGameInfo>>>();
+  const gameInfoCache = new Map<
+    string,
+    Awaited<ReturnType<typeof getGameInfo>>
+  >();
 
   for (const win of ffaWins) {
     for (const { guildId, discordUserId, channelId } of guildEntries) {

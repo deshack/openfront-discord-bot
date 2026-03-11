@@ -8,7 +8,10 @@ import { getPublicFFALeaderboardMessage } from "../messages/public_ffa_leaderboa
 import { getRankMessage } from "../messages/rank";
 import { CommandContext } from "../structures/command";
 import { Env } from "../types/env";
-import { patchOriginalResponse, postFollowupResponse } from "../util/discord-webhook";
+import {
+  patchOriginalResponse,
+  postFollowupResponse,
+} from "../util/discord-webhook";
 import { LeaderboardPeriod, MonthContext, RankingType } from "../util/stats";
 import { InteractionResponseWithFiles } from "./interaction";
 
@@ -100,7 +103,14 @@ export async function handleButton(
     }
 
     if (!ctx) {
-      const result = await getRankMessage(env.DB, guildId, period, page, monthContext, rankingType);
+      const result = await getRankMessage(
+        env.DB,
+        guildId,
+        period,
+        page,
+        monthContext,
+        rankingType,
+      );
       return {
         type: InteractionResponseType.UpdateMessage,
         data: result.message,
@@ -111,11 +121,22 @@ export async function handleButton(
     ctx.waitUntil(
       (async () => {
         try {
-          const result = await getRankMessage(env.DB, guildId, period, page, monthContext, rankingType);
+          const result = await getRankMessage(
+            env.DB,
+            guildId,
+            period,
+            page,
+            monthContext,
+            rankingType,
+          );
           await patchOriginalResponse(
             env.DISCORD_CLIENT_ID,
             interaction.token,
-            { embeds: result.message.embeds, components: result.message.components, attachments: result.message.attachments },
+            {
+              embeds: result.message.embeds,
+              components: result.message.components,
+              attachments: result.message.attachments,
+            },
             result.files,
           );
         } catch (err) {
@@ -156,7 +177,14 @@ export async function handleButton(
     }
 
     if (!ctx) {
-      const result = await getRankMessage(env.DB, guildId, period, page, monthContext, rankingType);
+      const result = await getRankMessage(
+        env.DB,
+        guildId,
+        period,
+        page,
+        monthContext,
+        rankingType,
+      );
       return {
         type: InteractionResponseType.UpdateMessage,
         data: result.message,
@@ -167,17 +195,29 @@ export async function handleButton(
     ctx.waitUntil(
       (async () => {
         try {
-          const result = await getRankMessage(env.DB, guildId, period, page, monthContext, rankingType);
+          const result = await getRankMessage(
+            env.DB,
+            guildId,
+            period,
+            page,
+            monthContext,
+            rankingType,
+          );
           await patchOriginalResponse(
             env.DISCORD_CLIENT_ID,
             interaction.token,
-            { embeds: result.message.embeds, components: result.message.components, attachments: result.message.attachments },
+            {
+              embeds: result.message.embeds,
+              components: result.message.components,
+              attachments: result.message.attachments,
+            },
             result.files,
           );
         } catch (err) {
           console.error("Rank pagination follow-up failed:", err);
           await postFollowupResponse(env.DISCORD_CLIENT_ID, interaction.token, {
-            content: "There was an error while fetching the leaderboard page :(",
+            content:
+              "There was an error while fetching the leaderboard page :(",
             flags: MessageFlags.Ephemeral,
           });
         }

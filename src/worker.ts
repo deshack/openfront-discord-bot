@@ -77,10 +77,14 @@ export default {
     env: Env,
     ctx: ExecutionContext,
   ): Promise<void> {
-    if (batch.queue === 'clan-wins-queue') {
-      ctx.waitUntil(handleClanWinsQueue(batch as MessageBatch<ClanWinsMessage>, env));
-    } else if (batch.queue === 'ffa-wins-queue') {
-      ctx.waitUntil(handleFFAWinsQueue(batch as MessageBatch<FFAWinsMessage>, env));
+    if (batch.queue === "clan-wins-queue") {
+      ctx.waitUntil(
+        handleClanWinsQueue(batch as MessageBatch<ClanWinsMessage>, env),
+      );
+    } else if (batch.queue === "ffa-wins-queue") {
+      ctx.waitUntil(
+        handleFFAWinsQueue(batch as MessageBatch<FFAWinsMessage>, env),
+      );
     } else {
       console.warn(`Unknown queue: ${batch.queue}`);
     }

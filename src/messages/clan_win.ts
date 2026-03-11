@@ -19,7 +19,9 @@ export function getClanWinMessage(
   const gameStart = new Date(session.gameStart);
 
   const formattedPlayers = clanPlayerUsernames.map((username) => {
-    const discordUserId = usernameMappings?.get(stripClanTag(username).toLowerCase());
+    const discordUserId = usernameMappings?.get(
+      stripClanTag(username).toLowerCase(),
+    );
 
     if (discordUserId) {
       return `${username} (<@${discordUserId}>)`;

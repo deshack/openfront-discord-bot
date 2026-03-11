@@ -1,6 +1,6 @@
 import {
-  APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataStringOption,
+  APIChatInputApplicationCommandInteraction,
   ApplicationCommandOptionType,
   ApplicationIntegrationType,
   InteractionContextType,
@@ -33,9 +33,8 @@ const command: CommandHandler = {
   async execute(interaction, env) {
     const chatInteraction =
       interaction as APIChatInputApplicationCommandInteraction;
-    const options =
-      chatInteraction.data
-        .options as APIApplicationCommandInteractionDataStringOption[];
+    const options = chatInteraction.data
+      .options as APIApplicationCommandInteractionDataStringOption[];
     const typeOption = options?.find((o) => o.name === "type");
     const type = typeOption?.value;
 

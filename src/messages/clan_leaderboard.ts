@@ -10,7 +10,10 @@ export async function getClanLeaderboardMessage(
   page: number,
 ): Promise<MessageData | undefined> {
   const clanLeaderboardData = await getClanLeaderboard();
-  if (clanLeaderboardData === undefined || clanLeaderboardData.data === undefined) {
+  if (
+    clanLeaderboardData === undefined ||
+    clanLeaderboardData.data === undefined
+  ) {
     return undefined;
   }
 

@@ -1,6 +1,6 @@
 import {
-  APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataStringOption,
+  APIChatInputApplicationCommandInteraction,
   ApplicationCommandOptionType,
   ApplicationIntegrationType,
   InteractionContextType,
@@ -72,7 +72,7 @@ const command: CommandHandler = {
 
     const type = options?.find((o) => o.name === "type")?.value;
 
-    if (!type || !['clan', 'players'].includes(type)) {
+    if (!type || !["clan", "players"].includes(type)) {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
@@ -127,9 +127,15 @@ const command: CommandHandler = {
       };
     }
 
-    if (type === 'clan') {
-      await initClanSessions(env.DB, guildId, channelId, startDateIso, endDateIso);
-    } else if (type === 'players') {
+    if (type === "clan") {
+      await initClanSessions(
+        env.DB,
+        guildId,
+        channelId,
+        startDateIso,
+        endDateIso,
+      );
+    } else if (type === "players") {
       const result = await initPlayerSessions(
         env.DB,
         guildId,

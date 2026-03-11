@@ -1,11 +1,5 @@
 import { Env } from "../types/env";
 import type { ClanWinsMessage, FFAWinsMessage } from "../types/queue";
-
-// const DAILY_QUEUE_LIMIT = 10_000;
-// const OPS_PER_MESSAGE = 2;
-// const RUNS_PER_DAY = 288; // every 5 min
-// const MAX_MESSAGES_PER_RUN = Math.floor(DAILY_QUEUE_LIMIT / (OPS_PER_MESSAGE * RUNS_PER_DAY)); // = 17
-const MAX_MESSAGES_PER_RUN = 4;
 import { GameMode, GameType } from "../util/api_schemas";
 import { getGameInfo, getPlayerSessions } from "../util/api_util";
 import {
@@ -31,6 +25,12 @@ import {
 } from "../util/db";
 import { sendChannelMessage } from "../util/discord";
 import { recordPlayerWin } from "../util/stats";
+
+// const DAILY_QUEUE_LIMIT = 10_000;
+// const OPS_PER_MESSAGE = 2;
+// const RUNS_PER_DAY = 288; // every 5 min
+// const MAX_MESSAGES_PER_RUN = Math.floor(DAILY_QUEUE_LIMIT / (OPS_PER_MESSAGE * RUNS_PER_DAY)); // = 17
+const MAX_MESSAGES_PER_RUN = 4;
 
 export async function handleScanJobs(env: Env): Promise<void> {
   console.debug("Running scheduled task for scan jobs.");
@@ -226,7 +226,9 @@ async function processFFAGame(
   game: ScanJobFFAGame,
 ): Promise<void> {
   try {
-    const gameInfoData = await getGameInfo(game.gameId, { includeTurns: false });
+    const gameInfoData = await getGameInfo(game.gameId, {
+      includeTurns: false,
+    });
 
     if (!gameInfoData) {
       console.debug(`Game ${game.gameId} not found`);
@@ -237,7 +239,10 @@ async function processFFAGame(
 
     const gameInfo = gameInfoData.data.info;
 
-    if (gameInfo.config.rankedType !== null && gameInfo.config.rankedType !== undefined) {
+    if (
+      gameInfo.config.rankedType !== null &&
+      gameInfo.config.rankedType !== undefined
+    ) {
       console.debug(`Game ${game.gameId} is ranked, skipping`);
       await completeFFAGameJob(env.DB, job.id, game.gameId);
 
@@ -287,7 +292,10 @@ async function processFFAGame(
 
     await completeFFAGameJob(env.DB, job.id, game.gameId);
   } catch (error) {
-    console.error(`Error processing game ${game.gameId} in job ${job.id}:`, error);
+    console.error(
+      `Error processing game ${game.gameId} in job ${job.id}:`,
+      error,
+    );
     await completeFFAGameJob(env.DB, job.id, game.gameId);
   }
 }
@@ -323,7 +331,9 @@ export async function handleClanWins(env: Env): Promise<void> {
     );
   }
 
-  console.info(`Dispatched ${chunks.length} clan win messages to queue (${clanTags.length} tags total).`);
+  console.info(
+    `Dispatched ${chunks.length} clan win messages to queue (${clanTags.length} tags total).`,
+  );
 }
 
 export async function handleFFAWins(env: Env): Promise<void> {
@@ -363,5 +373,7 @@ export async function handleFFAWins(env: Env): Promise<void> {
     );
   }
 
-  console.info(`Dispatched ${chunks.length} FFA player messages to queue (${ids.length} players total).`);
+  console.info(
+    `Dispatched ${chunks.length} FFA player messages to queue (${ids.length} players total).`,
+  );
 }

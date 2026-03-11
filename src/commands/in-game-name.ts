@@ -1,6 +1,6 @@
 import {
-  APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataSubcommandOption,
+  APIChatInputApplicationCommandInteraction,
   ApplicationCommandOptionType,
   ApplicationIntegrationType,
   InteractionContextType,
@@ -10,9 +10,9 @@ import {
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
 import {
-  setUsernameMapping,
-  removeUsernameMapping,
   getUsernameMappings,
+  removeUsernameMapping,
+  setUsernameMapping,
   stripClanTag,
 } from "../util/db";
 
@@ -69,9 +69,8 @@ const command: CommandHandler = {
   async execute(interaction, env) {
     const chatInteraction =
       interaction as APIChatInputApplicationCommandInteraction;
-    const options =
-      chatInteraction.data
-        .options as APIApplicationCommandInteractionDataSubcommandOption[];
+    const options = chatInteraction.data
+      .options as APIApplicationCommandInteractionDataSubcommandOption[];
     const subcommand = options?.[0];
 
     const guildId = chatInteraction.guild_id;

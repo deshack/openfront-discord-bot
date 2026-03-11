@@ -26,7 +26,9 @@ export async function initClanSessions(
   const sessionsData = await getClanSessions(clanTag, startDate, endDate);
 
   if (!sessionsData) {
-    console.debug(`No clan sessions found for clan ${clanTag}. Skipping scan. StartDate: ${startDate}, EndDate: ${endDate}`);
+    console.debug(
+      `No clan sessions found for clan ${clanTag}. Skipping scan. StartDate: ${startDate}, EndDate: ${endDate}`,
+    );
 
     return;
   }
@@ -79,10 +81,17 @@ export async function initPlayerSessions(
     };
   }
 
-  const jobId = await createScanJob(db, guildId, channelId, clanTag, "players", {
-    startDate,
-    endDate,
-  });
+  const jobId = await createScanJob(
+    db,
+    guildId,
+    channelId,
+    clanTag,
+    "players",
+    {
+      startDate,
+      endDate,
+    },
+  );
 
   for (const registration of registrations) {
     await createScanJobPlayer(db, jobId, registration.playerId);

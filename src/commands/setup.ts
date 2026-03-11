@@ -1,6 +1,6 @@
 import {
-  APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataSubcommandOption,
+  APIChatInputApplicationCommandInteraction,
   ApplicationCommandOptionType,
   ApplicationIntegrationType,
   InteractionContextType,
@@ -9,7 +9,7 @@ import {
   PermissionFlagsBits,
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
-import { setGuildConfig, getGuildConfig, deleteGuildConfig } from "../util/db";
+import { deleteGuildConfig, getGuildConfig, setGuildConfig } from "../util/db";
 
 const command: CommandHandler = {
   data: {
@@ -48,9 +48,8 @@ const command: CommandHandler = {
   async execute(interaction, env) {
     const chatInteraction =
       interaction as APIChatInputApplicationCommandInteraction;
-    const options =
-      chatInteraction.data
-        .options as APIApplicationCommandInteractionDataSubcommandOption[];
+    const options = chatInteraction.data
+      .options as APIApplicationCommandInteractionDataSubcommandOption[];
     const subcommand = options?.[0];
 
     const guildId = chatInteraction.guild_id;
@@ -91,7 +90,8 @@ const command: CommandHandler = {
         };
       }
 
-      const channelId = chatInteraction.channel?.id ?? chatInteraction.channel_id;
+      const channelId =
+        chatInteraction.channel?.id ?? chatInteraction.channel_id;
       if (!channelId) {
         return {
           type: InteractionResponseType.ChannelMessageWithSource,
@@ -133,7 +133,8 @@ const command: CommandHandler = {
         return {
           type: InteractionResponseType.ChannelMessageWithSource,
           data: {
-            content: "No win announcements configured for this server. Use `/setup wins <tag>` to enable.",
+            content:
+              "No win announcements configured for this server. Use `/setup wins <tag>` to enable.",
             flags: MessageFlags.Ephemeral,
           },
         };

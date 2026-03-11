@@ -1,6 +1,6 @@
 import {
-  APIChatInputApplicationCommandInteraction,
   APIApplicationCommandInteractionDataStringOption,
+  APIChatInputApplicationCommandInteraction,
   ApplicationCommandOptionType,
   ApplicationIntegrationType,
   InteractionContextType,
@@ -14,7 +14,8 @@ import { getGameDeathsMessage } from "../messages/game_deaths";
 const command: CommandHandler = {
   data: {
     name: "game-deaths",
-    description: "List players who died in a game, ordered by elimination turn.",
+    description:
+      "List players who died in a game, ordered by elimination turn.",
     integration_types: [ApplicationIntegrationType.GuildInstall],
     contexts: [InteractionContextType.Guild],
     options: [
@@ -53,7 +54,8 @@ const command: CommandHandler = {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
-          content: "Failed to fetch game info. Check the game ID and try again.",
+          content:
+            "Failed to fetch game info. Check the game ID and try again.",
           flags: MessageFlags.Ephemeral,
         },
       };

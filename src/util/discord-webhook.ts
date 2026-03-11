@@ -1,4 +1,4 @@
-import { FileAttachment, buildMultipartBody } from "./multipart";
+import { buildMultipartBody, FileAttachment } from "./multipart";
 
 const DISCORD_API = "https://discord.com/api/v10";
 
@@ -14,7 +14,10 @@ export async function patchOriginalResponse(
   let contentType: string;
 
   if (files && files.length > 0) {
-    const { body: multipartBody, boundary } = buildMultipartBody(payload, files);
+    const { body: multipartBody, boundary } = buildMultipartBody(
+      payload,
+      files,
+    );
     body = multipartBody.buffer as ArrayBuffer;
     contentType = `multipart/form-data; boundary=${boundary}`;
   } else {

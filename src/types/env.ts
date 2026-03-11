@@ -1,4 +1,4 @@
-import type { ClanWinsMessage, FFAWinsMessage } from './queue';
+import type { ClanWinsMessage, FFAWinsMessage } from "./queue";
 
 export interface Env {
   DISCORD_TOKEN: string;

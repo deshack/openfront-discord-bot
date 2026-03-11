@@ -31,7 +31,11 @@ export async function handleInteraction(
       );
 
     case InteractionType.MessageComponent:
-      return handleButton(interaction as APIMessageComponentInteraction, env, ctx);
+      return handleButton(
+        interaction as APIMessageComponentInteraction,
+        env,
+        ctx,
+      );
 
     default:
       return {

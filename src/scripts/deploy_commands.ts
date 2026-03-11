@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { REST, Routes } from "discord.js";
 import { commands } from "../commands";
 
