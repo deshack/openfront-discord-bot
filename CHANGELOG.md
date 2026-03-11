@@ -10,11 +10,11 @@
 
 - **CloudFlare Queues for win announcements** — Scheduled win handlers now use CloudFlare Queues to avoid hitting CPU limits during processing.
 - **Split win queues** — Clan and FFA win announcements are now handled by separate queues, and messages are batched to reduce operations.
-- **Message rate limiting** — Each queue run is capped at 4 messages to avoid hitting Discord rate limits.
+- **Message rate limiting** — Each queue run is capped at 4 messages to avoid hitting CloudFlare Queues operations limits.
 
 ### Bug Fixes
 
-- **Fix `/ffa` crash on missing channel access** — A Discord error 50001 (missing access) was incorrectly unregistering the player instead of the guild config. This is now handled correctly.
+- **Fix `/ffa` crash on missing channel access** — A Discord error 50001 (missing access) was incorrectly unregistering the guild config instead of the player registration. This is now handled correctly.
 
 ---
 
