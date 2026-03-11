@@ -14,6 +14,8 @@ import {
   getPlayerRegistration,
 } from "../util/db";
 
+const PLAYER_ID_REGEX = /^[a-zA-Z0-9]{8}$/;
+
 const command: CommandHandler = {
   data: {
     name: "ffa",
@@ -104,6 +106,17 @@ const command: CommandHandler = {
         };
       }
 
+      if (!PLAYER_ID_REGEX.test(playerId)) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content:
+              "Invalid Player ID format. Your Player ID is an 8-character alphanumeric code. Make sure you're not using your in-game name. You can find your Player ID in the account modal in-game.",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
       const channelId = chatInteraction.channel?.id ?? chatInteraction.channel_id;
       if (!channelId) {
         return {
@@ -120,8 +133,7 @@ const command: CommandHandler = {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
-          content: `Registered for FFA win tracking with Player ID \`${playerId}\`. Your wins will be announced in this channel.`,
-          flags: MessageFlags.Ephemeral,
+          content: `<@${discordUserId}> has registered for FFA win tracking. Their wins will be announced in this channel.`,
         },
       };
     }
