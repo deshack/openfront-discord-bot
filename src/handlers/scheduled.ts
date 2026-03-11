@@ -1,10 +1,11 @@
 import { Env } from "../types/env";
 import type { ClanWinsMessage, FFAWinsMessage } from "../types/queue";
 
-const DAILY_QUEUE_LIMIT = 10_000;
-const OPS_PER_MESSAGE = 2;
-const RUNS_PER_DAY = 288; // every 5 min
-const MAX_MESSAGES_PER_RUN = Math.floor(DAILY_QUEUE_LIMIT / (OPS_PER_MESSAGE * RUNS_PER_DAY)); // = 17
+// const DAILY_QUEUE_LIMIT = 10_000;
+// const OPS_PER_MESSAGE = 2;
+// const RUNS_PER_DAY = 288; // every 5 min
+// const MAX_MESSAGES_PER_RUN = Math.floor(DAILY_QUEUE_LIMIT / (OPS_PER_MESSAGE * RUNS_PER_DAY)); // = 17
+const MAX_MESSAGES_PER_RUN = 4;
 import { GameMode, GameType } from "../util/api_schemas";
 import { getGameInfo, getPlayerSessions } from "../util/api_util";
 import {
