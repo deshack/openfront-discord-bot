@@ -277,7 +277,7 @@ export interface GamePlayerRaw {
   persistentID: string | null;
   clanTag: string | null;
   cosmetics: GamePlayerCosmetics;
-  stats: GamePlayerStatsRaw;
+  stats?: GamePlayerStatsRaw;
 }
 
 export interface GameConfigRaw {
@@ -337,7 +337,7 @@ export interface GamePlayer {
   persistentID?: string;
   clanTag?: string;
   cosmetics: GamePlayerCosmetics;
-  stats: GamePlayerStatsRaw;
+  stats?: GamePlayerStatsRaw;
 }
 
 export interface GameInfo {

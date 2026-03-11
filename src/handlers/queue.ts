@@ -100,7 +100,7 @@ async function processClanTag(
         let duration: number | undefined;
         if (gameInfoData) {
           clanPlayerUsernames = gameInfoData.data.info.players
-            .filter((player) => player.clanTag === config.clanTag)
+            .filter((player) => player.clanTag === config.clanTag && player.stats !== undefined)
             .map((player) => player.username);
 
           map = gameInfoData.data.info.config.gameMap;
