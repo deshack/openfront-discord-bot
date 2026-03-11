@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.8.1
+
+### Bug Fixes
+
+- **Filter non-spawned players from clan win embeds** — Players who joined a game but never spawned are no longer listed in clan win announcements.
+
+---
+
 ## v1.8.0
 
 ### New Features
