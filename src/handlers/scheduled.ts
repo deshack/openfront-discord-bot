@@ -312,7 +312,7 @@ export async function handleClanWins(env: Env): Promise<void> {
   }
 
   const now = new Date();
-  const start = new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString();
+  const start = new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString();
   const end = now.toISOString();
 
   const clanTags = [...new Set(configs.map((c) => c.config.clanTag))];
@@ -348,7 +348,7 @@ export async function handleFFAWins(env: Env): Promise<void> {
   }
 
   const now = new Date();
-  const start = new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString();
+  const start = new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString();
   const end = now.toISOString();
 
   const playerIds = new Set<string>();
