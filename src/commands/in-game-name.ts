@@ -12,9 +12,20 @@ import { CommandHandler } from "../structures/command";
 import {
   getUsernameMappings,
   removeUsernameMapping,
+  removeUsernameMappingsByDiscordUser,
   setUsernameMapping,
   stripClanTag,
 } from "../util/db";
+
+function hasManageGuild(
+  interaction: APIChatInputApplicationCommandInteraction,
+): boolean {
+  return (
+    (BigInt(interaction.member?.permissions ?? "0") &
+      PermissionFlagsBits.ManageGuild) !==
+    0n
+  );
+}
 
 const command: CommandHandler = {
   data: {
@@ -22,7 +33,6 @@ const command: CommandHandler = {
     description: "Map in-game usernames to Discord users for win mentions",
     integration_types: [ApplicationIntegrationType.GuildInstall],
     contexts: [InteractionContextType.Guild],
-    default_member_permissions: String(PermissionFlagsBits.ManageGuild),
     dm_permission: false,
     options: [
       {
@@ -31,24 +41,25 @@ const command: CommandHandler = {
         description: "Map an in-game username to a Discord user",
         options: [
           {
-            type: ApplicationCommandOptionType.User,
-            name: "user",
-            description: "The Discord user",
-            required: true,
-          },
-          {
             type: ApplicationCommandOptionType.String,
             name: "username",
             description:
               "The in-game username (clan tag will be stripped automatically)",
             required: true,
           },
+          {
+            type: ApplicationCommandOptionType.User,
+            name: "user",
+            description:
+              "The Discord user to map (admin only — omit to set your own name)",
+            required: false,
+          },
         ],
       },
       {
         type: ApplicationCommandOptionType.Subcommand,
         name: "remove",
-        description: "Remove a username mapping",
+        description: "Remove a username mapping (admin only)",
         options: [
           {
             type: ApplicationCommandOptionType.String,
@@ -61,8 +72,13 @@ const command: CommandHandler = {
       },
       {
         type: ApplicationCommandOptionType.Subcommand,
+        name: "remove-my-name",
+        description: "Remove all your own in-game name mappings",
+      },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
         name: "list",
-        description: "Show all username mappings for this server",
+        description: "Show all username mappings for this server (admin only)",
       },
     ],
   },
@@ -100,23 +116,49 @@ const command: CommandHandler = {
         (o) => o.name === "username",
       );
 
-      const discordUserId =
-        userOption && "value" in userOption
-          ? String(userOption.value)
-          : undefined;
       const rawUsername =
         usernameOption && "value" in usernameOption
           ? String(usernameOption.value).trim()
           : undefined;
 
-      if (!discordUserId || !rawUsername) {
+      if (!rawUsername) {
         return {
           type: InteractionResponseType.ChannelMessageWithSource,
           data: {
-            content: "Both user and username are required.",
+            content: "Username is required.",
             flags: MessageFlags.Ephemeral,
           },
         };
+      }
+
+      let discordUserId: string;
+
+      if (userOption && "value" in userOption) {
+        if (!hasManageGuild(chatInteraction)) {
+          return {
+            type: InteractionResponseType.ChannelMessageWithSource,
+            data: {
+              content:
+                "You need the Manage Server permission to set another user's in-game name.",
+              flags: MessageFlags.Ephemeral,
+            },
+          };
+        }
+
+        discordUserId = String(userOption.value);
+      } else {
+        discordUserId =
+          chatInteraction.member?.user.id ?? chatInteraction.user?.id ?? "";
+
+        if (!discordUserId) {
+          return {
+            type: InteractionResponseType.ChannelMessageWithSource,
+            data: {
+              content: "Could not determine your Discord user ID.",
+              flags: MessageFlags.Ephemeral,
+            },
+          };
+        }
       }
 
       const username = stripClanTag(rawUsername);
@@ -132,6 +174,17 @@ const command: CommandHandler = {
     }
 
     if (subcommand.name === "remove") {
+      if (!hasManageGuild(chatInteraction)) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content:
+              "You need the Manage Server permission to use this command.",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
       const usernameOption = subcommand.options?.find(
         (o) => o.name === "username",
       );
@@ -172,7 +225,57 @@ const command: CommandHandler = {
       };
     }
 
+    if (subcommand.name === "remove-my-name") {
+      const discordUserId =
+        chatInteraction.member?.user.id ?? chatInteraction.user?.id ?? "";
+
+      if (!discordUserId) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: "Could not determine your Discord user ID.",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
+      const count = await removeUsernameMappingsByDiscordUser(
+        env.DB,
+        guildId,
+        discordUserId,
+      );
+
+      if (count === 0) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: "You have no in-game name mappings to remove.",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: `Removed ${count} in-game name mapping${count === 1 ? "" : "s"} for your account.`,
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
+
     if (subcommand.name === "list") {
+      if (!hasManageGuild(chatInteraction)) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content:
+              "You need the Manage Server permission to use this command.",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
       const mappings = await getUsernameMappings(env.DB, guildId);
 
       if (mappings.size === 0) {

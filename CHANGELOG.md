@@ -6,6 +6,7 @@
 
 - **Multi-clan-tag subscriptions** — A guild can now subscribe to multiple clan tags, each posting to its own channel. Use `/setup wins <tag>` repeatedly to add tags and `/setup remove <tag>` to remove a single one without disabling all announcements.
 - **Per-guild win-type channel routing** — Guild managers can direct non-ranked FFA wins and ranked wins to separate channels via `/setup ffa-channel` and `/setup ranked-channel`. If no override is set, wins continue to post to the player's registration channel.
+- **Self-service in-game name linking** — Players can now link their own in-game name with `/in-game-name set <username>` and unlink it with `/in-game-name remove-my-name`, without needing admin help.
 
 ### Improvements
 

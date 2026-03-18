@@ -259,6 +259,21 @@ export async function removeUsernameMapping(
   return result.meta.changes > 0;
 }
 
+export async function removeUsernameMappingsByDiscordUser(
+  db: D1Database,
+  guildId: string,
+  discordUserId: string,
+): Promise<number> {
+  const result = await db
+    .prepare(
+      "DELETE FROM username_mappings WHERE guild_id = ? AND discord_user_id = ?",
+    )
+    .bind(guildId, discordUserId)
+    .run();
+
+  return result.meta.changes;
+}
+
 export async function getUsernameMappings(
   db: D1Database,
   guildId: string,
