@@ -11,25 +11,21 @@ interface GuildConfigRow {
   updated_at: number;
 }
 
-export async function getGuildConfig(
+export async function listGuildConfigsByGuild(
   db: D1Database,
   guildId: string,
-): Promise<GuildConfig | null> {
-  const row = await db
+): Promise<GuildConfig[]> {
+  const { results } = await db
     .prepare(
       "SELECT clan_tag, channel_id FROM guild_configs WHERE guild_id = ?",
     )
     .bind(guildId)
-    .first<GuildConfigRow>();
+    .all<GuildConfigRow>();
 
-  if (!row) {
-    return null;
-  }
-
-  return {
+  return results.map((row) => ({
     clanTag: row.clan_tag,
     channelId: row.channel_id,
-  };
+  }));
 }
 
 export async function setGuildConfig(
@@ -41,8 +37,7 @@ export async function setGuildConfig(
     .prepare(
       `INSERT INTO guild_configs (guild_id, clan_tag, channel_id, created_at, updated_at)
        VALUES (?, ?, ?, unixepoch(), unixepoch())
-       ON CONFLICT (guild_id) DO UPDATE SET
-         clan_tag = excluded.clan_tag,
+       ON CONFLICT (guild_id, clan_tag) DO UPDATE SET
          channel_id = excluded.channel_id,
          updated_at = unixepoch()`,
     )
@@ -58,6 +53,21 @@ export async function deleteGuildConfig(
     .prepare("DELETE FROM guild_configs WHERE guild_id = ?")
     .bind(guildId)
     .run();
+}
+
+export async function deleteGuildClanTag(
+  db: D1Database,
+  guildId: string,
+  clanTag: string,
+): Promise<boolean> {
+  const result = await db
+    .prepare(
+      "DELETE FROM guild_configs WHERE guild_id = ? AND clan_tag = ?",
+    )
+    .bind(guildId, clanTag)
+    .run();
+
+  return result.meta.changes > 0;
 }
 
 export async function listGuildConfigs(

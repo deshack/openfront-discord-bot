@@ -18,6 +18,7 @@ import {
   getPlayersJobBatch,
   listAllPlayerRegistrations,
   listGuildConfigs,
+  listGuildConfigsByGuild,
   ScanJob,
   ScanJobClanSession,
   ScanJobFFAGame,
@@ -166,16 +167,18 @@ async function processPlayerDiscovery(
       return;
     }
 
+    const guildConfigs = await listGuildConfigsByGuild(env.DB, job.guildId);
+
     const ffaWins = sessionsData.data.filter(
       (session) =>
         session.hasWon &&
         session.gameType === GameType.Public &&
         session.gameMode === GameMode.FFA &&
-        session.clanTag === job.clanTag,
+        guildConfigs.some((c) => c.clanTag === session.clanTag),
     );
 
     console.debug(
-      `Found ${ffaWins.length} FFA wins for player ${player.playerId} with clan tag ${job.clanTag}`,
+      `Found ${ffaWins.length} FFA wins for player ${player.playerId} in guild ${job.guildId}`,
     );
 
     for (const win of ffaWins) {
@@ -267,9 +270,11 @@ async function processFFAGame(
       return;
     }
 
-    if (winnerPlayer.clanTag !== job.clanTag) {
+    const guildConfigs = await listGuildConfigsByGuild(env.DB, job.guildId);
+
+    if (!guildConfigs.some((c) => c.clanTag === winnerPlayer.clanTag)) {
       console.debug(
-        `Winner ${winnerPlayer.username} in game ${game.gameId} does not have clan tag ${job.clanTag}`,
+        `Winner ${winnerPlayer.username} in game ${game.gameId} does not match any subscribed clan tag for guild ${job.guildId}`,
       );
       await completeFFAGameJob(env.DB, job.id, game.gameId);
 

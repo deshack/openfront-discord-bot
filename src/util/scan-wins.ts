@@ -3,7 +3,7 @@ import {
   createScanJob,
   createScanJobClanSession,
   createScanJobPlayer,
-  getGuildConfig,
+  listGuildConfigsByGuild,
   listPlayerRegistrationsByGuild,
 } from "./db";
 
@@ -14,37 +14,38 @@ export async function initClanSessions(
   startDate: string,
   endDate: string,
 ) {
-  const guildConfig = await getGuildConfig(db, guildId);
-  const clanTag = guildConfig?.clanTag ?? null;
+  const guildConfigs = await listGuildConfigsByGuild(db, guildId);
 
-  if (!clanTag) {
-    console.warn(`Clan tag not found for guild ${guildId}. Skipping scan.`);
-
-    return;
-  }
-
-  const sessionsData = await getClanSessions(clanTag, startDate, endDate);
-
-  if (!sessionsData) {
-    console.debug(
-      `No clan sessions found for clan ${clanTag}. Skipping scan. StartDate: ${startDate}, EndDate: ${endDate}`,
-    );
+  if (guildConfigs.length === 0) {
+    console.warn(`No clan tags configured for guild ${guildId}. Skipping scan.`);
 
     return;
   }
 
-  const wins = sessionsData.data.filter((session) => session.hasWon);
+  for (const config of guildConfigs) {
+    const sessionsData = await getClanSessions(config.clanTag, startDate, endDate);
 
-  if (wins.length <= 0) {
-    console.debug("No wins found for clan sessions. Skipping scan.");
+    if (!sessionsData) {
+      console.debug(
+        `No clan sessions found for clan ${config.clanTag}. Skipping. StartDate: ${startDate}, EndDate: ${endDate}`,
+      );
 
-    return;
-  }
+      continue;
+    }
 
-  const jobId = await createScanJob(db, guildId, channelId, clanTag, "clan");
+    const wins = sessionsData.data.filter((session) => session.hasWon);
 
-  for (const win of wins) {
-    await createScanJobClanSession(db, jobId, win.gameId, win.score);
+    if (wins.length <= 0) {
+      console.debug(`No wins found for clan ${config.clanTag}. Skipping.`);
+
+      continue;
+    }
+
+    const jobId = await createScanJob(db, guildId, channelId, config.clanTag, "clan");
+
+    for (const win of wins) {
+      await createScanJobClanSession(db, jobId, win.gameId, win.score);
+    }
   }
 }
 
@@ -60,14 +61,13 @@ export async function initPlayerSessions(
   startDate: string,
   endDate: string,
 ): Promise<InitPlayerSessionsResult> {
-  const guildConfig = await getGuildConfig(db, guildId);
-  const clanTag = guildConfig?.clanTag ?? null;
+  const guildConfigs = await listGuildConfigsByGuild(db, guildId);
 
-  if (!clanTag) {
+  if (guildConfigs.length === 0) {
     return {
       success: false,
       message:
-        "Guild is not configured. Please run `/setup` to configure your clan tag.",
+        "Guild is not configured. Please run `/setup wins` to configure your clan tag.",
     };
   }
 
@@ -85,7 +85,7 @@ export async function initPlayerSessions(
     db,
     guildId,
     channelId,
-    clanTag,
+    null,
     "players",
     {
       startDate,

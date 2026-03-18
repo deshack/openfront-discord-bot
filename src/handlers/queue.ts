@@ -10,8 +10,8 @@ import {
 } from "../util/api_util";
 import {
   deleteGuildConfig,
-  getGuildConfig,
   getGuildConfigsByClanTag,
+  listGuildConfigsByGuild,
   getRegistrationsByPlayerId,
   getUsernameMappingsByUsernames,
   stripClanTag,
@@ -127,7 +127,7 @@ async function processClanTag(
           clanPlayerUsernames = gameInfoData.data.info.players
             .filter(
               (player) =>
-                player.clanTag === config.clanTag && player.stats !== undefined,
+                player.clanTag === clanTag && player.stats !== undefined,
             )
             .map((player) => player.username);
 
@@ -301,17 +301,19 @@ async function processPlayer(
             premiumCache.set(guildId, premiumStatus);
 
             if (premiumStatus.isPremium) {
-              const guildConfig = await getGuildConfig(env.DB, guildId);
-              const clanTag = guildConfig?.clanTag ?? null;
+              const guildConfigs = await listGuildConfigsByGuild(
+                env.DB,
+                guildId,
+              );
 
-              if (!clanTag) {
+              if (guildConfigs.length === 0) {
                 continue;
               }
 
               const winnerPlayer = gameInfo.players.find(
                 (p) =>
                   p.clientID === gameInfo.winner?.clientID &&
-                  p.clanTag === clanTag,
+                  guildConfigs.some((c) => c.clanTag === p.clanTag),
               );
 
               if (winnerPlayer) {

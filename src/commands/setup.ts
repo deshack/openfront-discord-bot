@@ -9,7 +9,12 @@ import {
   PermissionFlagsBits,
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
-import { deleteGuildConfig, getGuildConfig, setGuildConfig } from "../util/db";
+import {
+  deleteGuildClanTag,
+  deleteGuildConfig,
+  listGuildConfigsByGuild,
+  setGuildConfig,
+} from "../util/db";
 
 const command: CommandHandler = {
   data: {
@@ -23,12 +28,25 @@ const command: CommandHandler = {
       {
         type: ApplicationCommandOptionType.Subcommand,
         name: "wins",
-        description: "Configure clan win announcements in this channel",
+        description: "Add a clan tag to win announcements in this channel",
         options: [
           {
             type: ApplicationCommandOptionType.String,
             name: "tag",
             description: "The clan tag to track",
+            required: true,
+          },
+        ],
+      },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: "remove",
+        description: "Remove a clan tag from win announcements",
+        options: [
+          {
+            type: ApplicationCommandOptionType.String,
+            name: "tag",
+            description: "The clan tag to remove",
             required: true,
           },
         ],
@@ -110,7 +128,44 @@ const command: CommandHandler = {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
-          content: `Win announcements enabled for clan **[${tag}]** in this channel. The bot will check for new wins every 5 minutes.`,
+          content: `Win announcements enabled for **[${tag}]** in this channel. The bot will check for new wins every 5 minutes.`,
+        },
+      };
+    }
+
+    if (subcommand.name === "remove") {
+      const tagOption = subcommand.options?.find((o) => o.name === "tag");
+      const tag =
+        tagOption && "value" in tagOption
+          ? String(tagOption.value).trim().toUpperCase()
+          : undefined;
+
+      if (!tag) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: "Clan tag is required",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
+      const removed = await deleteGuildClanTag(env.DB, guildId, tag);
+
+      if (!removed) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: `This server is not subscribed to **[${tag}]**.`,
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: `Removed **[${tag}]** from win announcements.`,
         },
       };
     }
@@ -127,9 +182,9 @@ const command: CommandHandler = {
     }
 
     if (subcommand.name === "status") {
-      const config = await getGuildConfig(env.DB, guildId);
+      const configs = await listGuildConfigsByGuild(env.DB, guildId);
 
-      if (!config) {
+      if (configs.length === 0) {
         return {
           type: InteractionResponseType.ChannelMessageWithSource,
           data: {
@@ -140,10 +195,12 @@ const command: CommandHandler = {
         };
       }
 
+      const lines = configs.map((c) => `**[${c.clanTag}]** → <#${c.channelId}>`);
+
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
-          content: `Win announcements are enabled for clan **[${config.clanTag}]** in <#${config.channelId}>.`,
+          content: `Win announcements are enabled for:\n${lines.join("\n")}`,
           flags: MessageFlags.Ephemeral,
         },
       };
