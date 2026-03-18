@@ -11,6 +11,7 @@ import {
 import {
   deleteGuildConfig,
   getGuildConfigsByClanTag,
+  listGuildChannelConfigs,
   listGuildConfigsByGuild,
   getRegistrationsByPlayerId,
   getUsernameMappingsByUsernames,
@@ -235,6 +236,18 @@ async function processPlayer(
     Awaited<ReturnType<typeof getGameInfo>>
   >();
 
+  const guildChannelConfigCache = new Map<string, Map<string, string>>();
+  for (const { guildId } of guildEntries) {
+    if (!guildChannelConfigCache.has(guildId)) {
+      const configs = await listGuildChannelConfigs(env.DB, guildId);
+      const m = new Map<string, string>();
+      for (const c of configs) {
+        m.set(c.winType, c.channelId);
+      }
+      guildChannelConfigCache.set(guildId, m);
+    }
+  }
+
   for (const win of ffaWins) {
     for (const { guildId, discordUserId, channelId } of guildEntries) {
       if (removedGuildIds.has(guildId)) {
@@ -261,14 +274,23 @@ async function processPlayer(
         }
         const gameInfoData = gameInfoCache.get(win.gameId);
 
+        const gameInfo = gameInfoData?.data.info;
+        const isRanked =
+          gameInfo !== undefined &&
+          gameInfo.config.rankedType !== null &&
+          gameInfo.config.rankedType !== undefined;
+        const winType = isRanked ? "ranked" : "ffa";
+        const targetChannelId =
+          guildChannelConfigCache.get(guildId)?.get(winType) ?? channelId;
+
         const discordMessage = getFFAWinMessage({
           discordUserId,
           gameId: win.gameId,
-          gameInfo: gameInfoData?.data.info,
+          gameInfo,
         });
         const result = await sendChannelMessage(
           env.DISCORD_TOKEN,
-          channelId,
+          targetChannelId,
           discordMessage,
         );
 
@@ -284,7 +306,6 @@ async function processPlayer(
         if (result.success) {
           await markFFAGamePosted(env.DATA, guildId, playerId, win.gameId);
 
-          const gameInfo = gameInfoData?.data.info;
           const isNotRanked =
             gameInfo !== undefined && gameInfo.config.rankedType === undefined;
 

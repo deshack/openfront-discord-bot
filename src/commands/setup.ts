@@ -12,7 +12,10 @@ import { CommandHandler } from "../structures/command";
 import {
   deleteGuildClanTag,
   deleteGuildConfig,
+  deleteGuildChannelConfigs,
+  listGuildChannelConfigs,
   listGuildConfigsByGuild,
+  setGuildChannelConfig,
   setGuildConfig,
 } from "../util/db";
 
@@ -50,6 +53,16 @@ const command: CommandHandler = {
             required: true,
           },
         ],
+      },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: "ffa-channel",
+        description: "Set this channel for non-ranked FFA win announcements",
+      },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: "ranked-channel",
+        description: "Set this channel for ranked FFA win announcements",
       },
       {
         type: ApplicationCommandOptionType.Subcommand,
@@ -170,8 +183,53 @@ const command: CommandHandler = {
       };
     }
 
+    if (subcommand.name === "ffa-channel") {
+      const channelId = chatInteraction.channel?.id;
+      if (!channelId) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: "Could not determine channel",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
+      await setGuildChannelConfig(env.DB, guildId, "ffa", channelId);
+
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: "Non-ranked FFA wins will be posted in this channel.",
+        },
+      };
+    }
+
+    if (subcommand.name === "ranked-channel") {
+      const channelId = chatInteraction.channel?.id;
+      if (!channelId) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: "Could not determine channel",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
+      await setGuildChannelConfig(env.DB, guildId, "ranked", channelId);
+
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: "Ranked FFA wins will be posted in this channel.",
+        },
+      };
+    }
+
     if (subcommand.name === "disable") {
       await deleteGuildConfig(env.DB, guildId);
+      await deleteGuildChannelConfigs(env.DB, guildId);
 
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
@@ -183,8 +241,9 @@ const command: CommandHandler = {
 
     if (subcommand.name === "status") {
       const configs = await listGuildConfigsByGuild(env.DB, guildId);
+      const channelConfigs = await listGuildChannelConfigs(env.DB, guildId);
 
-      if (configs.length === 0) {
+      if (configs.length === 0 && channelConfigs.length === 0) {
         return {
           type: InteractionResponseType.ChannelMessageWithSource,
           data: {
@@ -196,11 +255,25 @@ const command: CommandHandler = {
       }
 
       const lines = configs.map((c) => `**[${c.clanTag}]** → <#${c.channelId}>`);
+      let content = `Win announcements are enabled for:\n${lines.join("\n")}`;
+
+      const ffaChannelConfig = channelConfigs.find((c) => c.winType === "ffa");
+      const rankedChannelConfig = channelConfigs.find((c) => c.winType === "ranked");
+
+      if (ffaChannelConfig || rankedChannelConfig) {
+        content += "\n\n**Channel overrides:**";
+        if (ffaChannelConfig) {
+          content += `\n**FFA wins channel:** <#${ffaChannelConfig.channelId}>`;
+        }
+        if (rankedChannelConfig) {
+          content += `\n**Ranked wins channel:** <#${rankedChannelConfig.channelId}>`;
+        }
+      }
 
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
-          content: `Win announcements are enabled for:\n${lines.join("\n")}`,
+          content,
           flags: MessageFlags.Ephemeral,
         },
       };

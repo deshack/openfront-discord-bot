@@ -104,6 +104,79 @@ export async function getGuildConfigsByClanTag(
   }));
 }
 
+// ========== Guild Channel Configs ==========
+
+export interface GuildChannelConfig {
+  winType: string;
+  channelId: string;
+}
+
+interface GuildChannelConfigRow {
+  guild_id: string;
+  win_type: string;
+  channel_id: string;
+}
+
+export async function setGuildChannelConfig(
+  db: D1Database,
+  guildId: string,
+  winType: string,
+  channelId: string,
+): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO guild_channel_configs (guild_id, win_type, channel_id, created_at, updated_at)
+       VALUES (?, ?, ?, unixepoch(), unixepoch())
+       ON CONFLICT (guild_id, win_type) DO UPDATE SET
+         channel_id = excluded.channel_id,
+         updated_at = unixepoch()`,
+    )
+    .bind(guildId, winType, channelId)
+    .run();
+}
+
+export async function getGuildChannelConfig(
+  db: D1Database,
+  guildId: string,
+  winType: string,
+): Promise<string | null> {
+  const row = await db
+    .prepare(
+      "SELECT channel_id FROM guild_channel_configs WHERE guild_id = ? AND win_type = ?",
+    )
+    .bind(guildId, winType)
+    .first<GuildChannelConfigRow>();
+
+  return row?.channel_id ?? null;
+}
+
+export async function listGuildChannelConfigs(
+  db: D1Database,
+  guildId: string,
+): Promise<GuildChannelConfig[]> {
+  const { results } = await db
+    .prepare(
+      "SELECT win_type, channel_id FROM guild_channel_configs WHERE guild_id = ?",
+    )
+    .bind(guildId)
+    .all<GuildChannelConfigRow>();
+
+  return results.map((row) => ({
+    winType: row.win_type,
+    channelId: row.channel_id,
+  }));
+}
+
+export async function deleteGuildChannelConfigs(
+  db: D1Database,
+  guildId: string,
+): Promise<void> {
+  await db
+    .prepare("DELETE FROM guild_channel_configs WHERE guild_id = ?")
+    .bind(guildId)
+    .run();
+}
+
 export async function getRegistrationsByPlayerId(
   db: D1Database,
   playerId: string,
