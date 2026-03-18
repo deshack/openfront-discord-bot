@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.9.0
+
+### New Features
+
+- **Multi-clan-tag subscriptions** — A guild can now subscribe to multiple clan tags, each posting to its own channel. Use `/setup wins <tag>` repeatedly to add tags and `/setup remove <tag>` to remove a single one without disabling all announcements.
+- **Per-guild win-type channel routing** — Guild managers can direct non-ranked FFA wins and ranked FFA wins to separate channels via `/setup ffa-channel` and `/setup ranked-channel`. If no override is set, wins continue to post to the player's registration channel.
+
+### Improvements
+
+- **`/setup status`** now lists all subscribed clan tags with their channels, plus any configured FFA/ranked channel overrides.
+- **`/setup disable`** now also clears channel overrides when disabling win announcements.
+
+---
+
 ## v1.8.1
 
 ### Bug Fixes
