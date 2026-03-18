@@ -167,6 +167,19 @@ export async function listGuildChannelConfigs(
   }));
 }
 
+export async function deleteGuildChannelConfig(
+  db: D1Database,
+  guildId: string,
+  winType: string,
+): Promise<void> {
+  await db
+    .prepare(
+      "DELETE FROM guild_channel_configs WHERE guild_id = ? AND win_type = ?",
+    )
+    .bind(guildId, winType)
+    .run();
+}
+
 export async function deleteGuildChannelConfigs(
   db: D1Database,
   guildId: string,

@@ -9,6 +9,7 @@ import {
   getPlayerSessions,
 } from "../util/api_util";
 import {
+  deleteGuildChannelConfig,
   deleteGuildConfig,
   getGuildConfigsByClanTag,
   listGuildChannelConfigs,
@@ -295,11 +296,19 @@ async function processPlayer(
         );
 
         if (!result.success && result.discordCode === 50001) {
-          console.warn(
-            `Missing Access for player ${discordUserId} in guild ${guildId}. Unregistering player.`,
-          );
-          await unregisterPlayer(env.DB, guildId, discordUserId);
-          removedGuildIds.add(guildId);
+          if (targetChannelId !== channelId) {
+            console.warn(
+              `Missing Access for channel override (${winType}) in guild ${guildId}. Removing channel override.`,
+            );
+            await deleteGuildChannelConfig(env.DB, guildId, winType);
+            guildChannelConfigCache.get(guildId)?.delete(winType);
+          } else {
+            console.warn(
+              `Missing Access for player ${discordUserId} in guild ${guildId}. Unregistering player.`,
+            );
+            await unregisterPlayer(env.DB, guildId, discordUserId);
+            removedGuildIds.add(guildId);
+          }
           continue;
         }
 
