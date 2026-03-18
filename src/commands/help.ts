@@ -58,7 +58,7 @@ const command: CommandHandler = {
                   "`/setup wins <tag>` — Add a clan tag to win announcements",
                   "`/setup remove <tag>` — Remove a clan tag from win announcements",
                   "`/setup ffa-channel` — Set channel for non-ranked FFA win announcements",
-                  "`/setup ranked-channel` — Set channel for ranked FFA win announcements",
+                  "`/setup ranked-channel` — Set channel for ranked win announcements",
                   "`/setup disable` — Disable win announcements",
                   "`/setup status` — View current bot configuration",
                   "`/in-game-name set <user> <username>` — Map a Discord user to their in-game name",

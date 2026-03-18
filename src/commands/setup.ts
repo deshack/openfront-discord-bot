@@ -62,7 +62,7 @@ const command: CommandHandler = {
       {
         type: ApplicationCommandOptionType.Subcommand,
         name: "ranked-channel",
-        description: "Set this channel for ranked FFA win announcements",
+        description: "Set this channel for ranked win announcements",
       },
       {
         type: ApplicationCommandOptionType.Subcommand,
