@@ -70,6 +70,13 @@ const command: CommandHandler = {
                 ].join("\n"),
               },
               {
+                name: "Bot Owner",
+                value: [
+                  "`/trigger-wins clan [hours]` — Manually trigger clan wins check",
+                  "`/trigger-wins ffa [hours]` — Manually trigger FFA wins check",
+                ].join("\n"),
+              },
+              {
                 name: "Utility",
                 value: [
                   "`/ping` — Check bot responsiveness",

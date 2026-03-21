@@ -9,6 +9,7 @@ import ping from "./ping";
 import rank from "./rank";
 import scanWins from "./scan-wins";
 import setup from "./setup";
+import triggerWins from "./trigger-wins";
 import whois from "./whois";
 
 export const commands = {
@@ -23,5 +24,6 @@ export const commands = {
   rank,
   "scan-wins": scanWins,
   setup,
+  "trigger-wins": triggerWins,
   whois,
 };
