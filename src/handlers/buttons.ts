@@ -12,7 +12,12 @@ import {
   patchOriginalResponse,
   postFollowupResponse,
 } from "../util/discord-webhook";
-import { LeaderboardPeriod, MonthContext, RankingType } from "../util/stats";
+import {
+  LeaderboardPeriod,
+  MonthContext,
+  RankingType,
+  WeekContext,
+} from "../util/stats";
 import { InteractionResponseWithFiles } from "./interaction";
 
 export async function handleButton(
@@ -75,12 +80,22 @@ export async function handleButton(
     }
 
     const parts = customId.split("|");
+    // New format (8 parts): rank-refresh|period|year|month|week|page|timestamp|rankingType
+    // Old format (7 parts): rank-refresh|period|year|month|page|timestamp|rankingType
+    const isNewRefreshFormat = parts.length >= 8;
     const period = parts[1] as LeaderboardPeriod;
     const year = parseInt(parts[2]);
     const month = parseInt(parts[3]);
-    const page = parseInt(parts[4]) || 0;
-    const lastRefresh = parseInt(parts[5]) || 0;
-    const rankingType = (parts[6] as RankingType) || "wins";
+    const week = isNewRefreshFormat ? parseInt(parts[4]) : 0;
+    const page = isNewRefreshFormat
+      ? parseInt(parts[5]) || 0
+      : parseInt(parts[4]) || 0;
+    const lastRefresh = isNewRefreshFormat
+      ? parseInt(parts[6]) || 0
+      : parseInt(parts[5]) || 0;
+    const rankingType = isNewRefreshFormat
+      ? ((parts[7] as RankingType) || "wins")
+      : ((parts[6] as RankingType) || "wins");
 
     const now = Date.now();
     const cooldownMs = 30 * 1000;
@@ -102,6 +117,11 @@ export async function handleButton(
       monthContext = { year, month };
     }
 
+    let weekContext: WeekContext | undefined;
+    if (period === "weekly" && year > 0 && week > 0) {
+      weekContext = { year, week };
+    }
+
     if (!ctx) {
       const result = await getRankMessage(
         env.DB,
@@ -110,6 +130,7 @@ export async function handleButton(
         page,
         monthContext,
         rankingType,
+        weekContext,
       );
       return {
         type: InteractionResponseType.UpdateMessage,
@@ -128,6 +149,7 @@ export async function handleButton(
             page,
             monthContext,
             rankingType,
+            weekContext,
           );
           await patchOriginalResponse(
             env.DISCORD_CLIENT_ID,
@@ -165,15 +187,28 @@ export async function handleButton(
     }
 
     const parts = customId.split("|");
+    // New format (7 parts): rank|period|year|month|week|page|rankingType
+    // Old format (6 parts): rank|period|year|month|page|rankingType
+    const isNewPaginationFormat = parts.length >= 7;
     const period = parts[1] as LeaderboardPeriod;
     const year = parseInt(parts[2]);
     const month = parseInt(parts[3]);
-    const page = parseInt(parts[4]) || 0;
-    const rankingType = (parts[5] as RankingType) || "wins";
+    const week = isNewPaginationFormat ? parseInt(parts[4]) : 0;
+    const page = isNewPaginationFormat
+      ? parseInt(parts[5]) || 0
+      : parseInt(parts[4]) || 0;
+    const rankingType = isNewPaginationFormat
+      ? ((parts[6] as RankingType) || "wins")
+      : ((parts[5] as RankingType) || "wins");
 
     let monthContext: MonthContext | undefined;
     if (period === "monthly" && year > 0 && month > 0) {
       monthContext = { year, month };
+    }
+
+    let weekContext: WeekContext | undefined;
+    if (period === "weekly" && year > 0 && week > 0) {
+      weekContext = { year, week };
     }
 
     if (!ctx) {
@@ -184,6 +219,7 @@ export async function handleButton(
         page,
         monthContext,
         rankingType,
+        weekContext,
       );
       return {
         type: InteractionResponseType.UpdateMessage,
@@ -202,6 +238,7 @@ export async function handleButton(
             page,
             monthContext,
             rankingType,
+            weekContext,
           );
           await patchOriginalResponse(
             env.DISCORD_CLIENT_ID,

@@ -12,7 +12,13 @@ import {
 import { getRankMessage } from "../messages/rank";
 import { CommandHandler } from "../structures/command";
 import { patchOriginalResponse } from "../util/discord-webhook";
-import { LeaderboardPeriod, MonthContext, RankingType } from "../util/stats";
+import {
+  getISOWeek,
+  LeaderboardPeriod,
+  MonthContext,
+  RankingType,
+  WeekContext,
+} from "../util/stats";
 
 const command: CommandHandler = {
   data: {
@@ -28,6 +34,7 @@ const command: CommandHandler = {
         description: "Time period for rankings",
         required: false,
         choices: [
+          { name: "Week", value: "weekly" },
           { name: "Month", value: "monthly" },
           { name: "All Time", value: "all_time" },
         ],
@@ -47,6 +54,14 @@ const command: CommandHandler = {
         required: false,
         min_value: 1,
         max_value: 12,
+      },
+      {
+        type: ApplicationCommandOptionType.Integer,
+        name: "week",
+        description: "ISO week number to view (1-53, defaults to current week)",
+        required: false,
+        min_value: 1,
+        max_value: 53,
       },
       {
         type: ApplicationCommandOptionType.String,
@@ -88,6 +103,9 @@ const command: CommandHandler = {
     const monthOption = options.find((o) => o.name === "month") as
       | APIApplicationCommandInteractionDataIntegerOption
       | undefined;
+    const weekOption = options.find((o) => o.name === "week") as
+      | APIApplicationCommandInteractionDataIntegerOption
+      | undefined;
     const typeOption = options.find((o) => o.name === "type") as
       | APIApplicationCommandInteractionDataStringOption
       | undefined;
@@ -127,6 +145,35 @@ const command: CommandHandler = {
       monthContext = { year, month };
     }
 
+    let weekContext: WeekContext | undefined;
+    if (period === "weekly") {
+      const now = new Date();
+      const currentISO = getISOWeek(now);
+      const year =
+        yearOption?.value !== undefined
+          ? Number(yearOption.value)
+          : currentISO.year;
+      const week =
+        weekOption?.value !== undefined
+          ? Number(weekOption.value)
+          : currentISO.week;
+
+      if (
+        year > currentISO.year ||
+        (year === currentISO.year && week > currentISO.week)
+      ) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: "Cannot view leaderboard for future weeks.",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
+      weekContext = { year, week };
+    }
+
     if (!ctx) {
       const result = await getRankMessage(
         env.DB,
@@ -135,6 +182,7 @@ const command: CommandHandler = {
         0,
         monthContext,
         rankingType,
+        weekContext,
       );
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
@@ -153,6 +201,7 @@ const command: CommandHandler = {
             0,
             monthContext,
             rankingType,
+            weekContext,
           );
           await patchOriginalResponse(
             env.DISCORD_CLIENT_ID,

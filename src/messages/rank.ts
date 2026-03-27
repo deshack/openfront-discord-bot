@@ -3,11 +3,15 @@ import { MessageDataWithFiles } from "../structures/message";
 import { generateLeaderboardImage, LeaderboardRow } from "../util/image-table";
 import {
   getEndOfMonth,
+  getISOWeek,
   getLeaderboard,
+  getWeekTimestampRange,
   isCurrentMonth,
+  isCurrentWeek,
   LeaderboardPeriod,
   MonthContext,
   RankingType,
+  WeekContext,
 } from "../util/stats";
 
 const RANK_PAGE_ENTRIES = 25;
@@ -19,6 +23,7 @@ export async function getRankMessage(
   page: number,
   monthContext?: MonthContext,
   rankingType: RankingType = "wins",
+  weekContext?: WeekContext,
 ): Promise<MessageDataWithFiles> {
   const offset = page * RANK_PAGE_ENTRIES;
   const result = await getLeaderboard(
@@ -29,6 +34,7 @@ export async function getRankMessage(
     offset,
     monthContext,
     rankingType,
+    weekContext,
   );
 
   const totalPages = Math.max(
@@ -38,7 +44,11 @@ export async function getRankMessage(
   const isLastPage = page >= totalPages - 1;
 
   const periodTitle =
-    period === "monthly" ? getMonthName(monthContext) : "All Time";
+    period === "weekly"
+      ? getWeekLabel(weekContext)
+      : period === "monthly"
+        ? getMonthName(monthContext)
+        : "All Time";
   const rankingLabel =
     rankingType === "score"
       ? "By Score"
@@ -68,7 +78,21 @@ export async function getRankMessage(
   }
 
   let footer: string;
-  if (period === "monthly") {
+  if (period === "weekly") {
+    if (isCurrentWeek(weekContext)) {
+      const { end } = getWeekTimestampRange(weekContext);
+      const sunday = new Date((end - 1) * 1000);
+      const formatted = sunday.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+      footer = `Season ends ${formatted}`;
+    } else {
+      footer = "Past season standings";
+    }
+  } else if (period === "monthly") {
     if (isCurrentMonth(monthContext)) {
       const endOfMonth = getEndOfMonth(monthContext);
       const lastDay = new Date(endOfMonth.getTime() - 1);
@@ -88,6 +112,7 @@ export async function getRankMessage(
 
   const year = monthContext?.year ?? 0;
   const month = monthContext?.month ?? 0;
+  const week = weekContext?.week ?? 0;
 
   const backButton = {
     type: ComponentType.Button as const,
@@ -96,7 +121,7 @@ export async function getRankMessage(
     custom_id:
       page === 0
         ? "rank-back-disabled"
-        : `rank|${period}|${year}|${month}|${page - 1}|${rankingType}`,
+        : `rank|${period}|${year}|${month}|${week}|${page - 1}|${rankingType}`,
     disabled: page === 0,
   };
 
@@ -114,7 +139,7 @@ export async function getRankMessage(
     style: ButtonStyle.Primary as ButtonStyle.Primary,
     custom_id: isLastPage
       ? "rank-next-disabled"
-      : `rank|${period}|${year}|${month}|${page + 1}|${rankingType}`,
+      : `rank|${period}|${year}|${month}|${week}|${page + 1}|${rankingType}`,
     disabled: isLastPage,
   };
 
@@ -122,7 +147,7 @@ export async function getRankMessage(
     type: ComponentType.Button as const,
     emoji: { name: "🔄" },
     style: ButtonStyle.Secondary as ButtonStyle.Secondary,
-    custom_id: `rank-refresh|${period}|${year}|${month}|${page}|${timestamp}|${rankingType}`,
+    custom_id: `rank-refresh|${period}|${year}|${month}|${week}|${page}|${timestamp}|${rankingType}`,
   };
 
   const embed = hasEntries
@@ -187,4 +212,25 @@ function getMonthName(context?: MonthContext): string {
   const month = context?.month ?? now.getUTCMonth() + 1;
 
   return `${MONTH_NAMES[month - 1]} ${year}`;
+}
+
+function getWeekLabel(context?: WeekContext): string {
+  const { year, week } = context ?? getISOWeek(new Date());
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const dayOfWeek = jan4.getUTCDay();
+  const mondayOfWeek1 = new Date(jan4);
+  mondayOfWeek1.setUTCDate(jan4.getUTCDate() - ((dayOfWeek + 6) % 7));
+  const monday = new Date(mondayOfWeek1);
+  monday.setUTCDate(mondayOfWeek1.getUTCDate() + (week - 1) * 7);
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+
+  return `${fmt(monday)} \u2013 ${fmt(sunday)}, ${sunday.getUTCFullYear()}`;
 }
