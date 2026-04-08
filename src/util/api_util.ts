@@ -1,6 +1,7 @@
 import {
   ClanLeaderboardData,
   ClanSession,
+  ClanSessionsApiResponse,
   ClanStats,
   GameInfoResponse,
   GameInfoResponseRaw,
@@ -98,21 +99,36 @@ export async function getPlayerPublic(
   };
 }
 
+const SESSIONS_PAGE_LIMIT = 50;
+
 export async function getClanSessions(
   clanTag: string,
   start: string,
   end: string,
 ): Promise<ApiResponse<ClanSession[]> | undefined> {
-  const url = `${API_CLAN_SESSIONS_PATH}${encodeURIComponent(clanTag)}/sessions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
-  const res = await fetch(url);
-  if (res.status !== 200) {
-    return undefined;
+  const allSessions: ClanSession[] = [];
+  let page = 1;
+
+  while (true) {
+    const url = `${API_CLAN_SESSIONS_PATH}${encodeURIComponent(clanTag)}/sessions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&page=${page}&limit=${SESSIONS_PAGE_LIMIT}`;
+    const res = await fetch(url);
+
+    if (res.status !== 200) {
+      return undefined;
+    }
+
+    const json = (await res.json()) as ClanSessionsApiResponse;
+    allSessions.push(...json.results);
+
+    if (allSessions.length >= json.total || json.results.length < SESSIONS_PAGE_LIMIT) {
+      break;
+    }
+
+    page++;
   }
 
-  const json = (await res.json()) as ClanSession[];
-
   return {
-    data: json,
+    data: allSessions,
     fetchedAt: Date.now(),
   };
 }

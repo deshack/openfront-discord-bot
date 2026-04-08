@@ -64,6 +64,13 @@ export interface ClanSession {
   score: number;
 }
 
+export interface ClanSessionsApiResponse {
+  results: ClanSession[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface PlayerSession {
   gameId: string;
   gameStart: string;
