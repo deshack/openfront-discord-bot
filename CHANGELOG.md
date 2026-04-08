@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.10.1
+
+### Bug Fixes
+
+- **Handle pagination in clan sessions API** — The clan sessions endpoint now returns paginated results. The bot auto-fetches all pages so win counts and session displays remain accurate regardless of result set size.
+
+---
+
+## v1.10.0
+
+### New Features
+
+- **Weekly period for `/rank`** — The `/rank` command now supports a weekly period option.
+- **`/trigger-wins` owner command** — Manual cron fallback command for triggering win scans.
+
+---
+
 ## v1.9.0
 
 ### New Features
