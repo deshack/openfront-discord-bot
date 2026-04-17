@@ -149,7 +149,8 @@ export async function getGameInfo(
 
   const res = await fetch(url);
   if (res.status !== 200) {
-    console.error(`Failed to fetch game info for ${gameId}: HTTP ${res.status}`);
+    const body = await res.text().catch(() => "(unreadable)");
+    console.error(`Failed to fetch game info for ${gameId}: HTTP ${res.status} - ${body}`);
     return undefined;
   }
 
