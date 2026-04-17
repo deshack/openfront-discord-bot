@@ -122,20 +122,19 @@ async function processClanTag(
         }
         const gameInfoData = gameInfoCache.get(win.gameId);
 
-        let clanPlayerUsernames: string[] = [];
-        let map: string = "Unknown";
-        let duration: number | undefined;
-        if (gameInfoData) {
-          clanPlayerUsernames = gameInfoData.data.info.players
-            .filter(
-              (player) =>
-                player.clanTag === clanTag && player.stats !== undefined,
-            )
-            .map((player) => player.username);
-
-          map = gameInfoData.data.info.config.gameMap;
-          duration = gameInfoData.data.info.duration;
+        if (!gameInfoData) {
+          console.error(`Game info unavailable for game ${win.gameId}, skipping.`);
+          continue;
         }
+
+        const clanPlayerUsernames = gameInfoData.data.info.players
+          .filter(
+            (player) =>
+              player.clanTag === clanTag && player.stats !== undefined,
+          )
+          .map((player) => player.username);
+        const map = gameInfoData.data.info.config.gameMap;
+        const duration = gameInfoData.data.info.duration;
 
         const usernameMappings = await getUsernameMappingsByUsernames(
           env.DB,
@@ -275,9 +274,13 @@ async function processPlayer(
         }
         const gameInfoData = gameInfoCache.get(win.gameId);
 
-        const gameInfo = gameInfoData?.data.info;
+        if (!gameInfoData) {
+          console.error(`Game info unavailable for game ${win.gameId}, skipping.`);
+          continue;
+        }
+
+        const gameInfo = gameInfoData.data.info;
         const isRanked =
-          gameInfo !== undefined &&
           gameInfo.config.rankedType !== null &&
           gameInfo.config.rankedType !== undefined;
         const winType = isRanked ? "ranked" : "ffa";
@@ -315,8 +318,7 @@ async function processPlayer(
         if (result.success) {
           await markFFAGamePosted(env.DATA, guildId, playerId, win.gameId);
 
-          const isNotRanked =
-            gameInfo !== undefined && gameInfo.config.rankedType === undefined;
+          const isNotRanked = gameInfo.config.rankedType === undefined;
 
           if (isNotRanked && gameInfo.winner) {
             const premiumStatus =
