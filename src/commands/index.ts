@@ -1,3 +1,4 @@
+import deleteGameRecord from "./delete-game-record";
 import ffa from "./ffa";
 import game from "./game";
 import gameDeaths from "./game-deaths";
@@ -13,6 +14,7 @@ import triggerWins from "./trigger-wins";
 import whois from "./whois";
 
 export const commands = {
+  "Delete Game Record": deleteGameRecord,
   ffa,
   game,
   "game-deaths": gameDeaths,

@@ -1,7 +1,7 @@
 import {
   APIApplicationCommandInteraction,
   APIInteractionResponse,
-  RESTPostAPIChatInputApplicationCommandsJSONBody,
+  RESTPostAPIApplicationCommandsJSONBody,
 } from "discord-api-types/v10";
 import { InteractionResponseWithFiles } from "../handlers/interaction";
 import { Env } from "../types/env";
@@ -11,7 +11,7 @@ export interface CommandContext {
 }
 
 export interface CommandHandler {
-  data: RESTPostAPIChatInputApplicationCommandsJSONBody;
+  data: RESTPostAPIApplicationCommandsJSONBody;
   requiresPremium?: boolean;
   execute(
     interaction: APIApplicationCommandInteraction,

@@ -147,6 +147,17 @@ export async function recordPlayerWin(
     .run();
 }
 
+export async function deletePlayerWinsByGame(
+  db: D1Database,
+  guildId: string,
+  gameId: string,
+): Promise<void> {
+  await db
+    .prepare("DELETE FROM player_stats WHERE guild_id = ? AND game_id = ?")
+    .bind(guildId, gameId)
+    .run();
+}
+
 export async function getLeaderboard(
   db: D1Database,
   guildId: string,

@@ -12,6 +12,19 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export async function deleteMessage(
+  token: string,
+  channelId: string,
+  messageId: string,
+): Promise<void> {
+  await fetch(`${DISCORD_API_BASE}/channels/${channelId}/messages/${messageId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bot ${token}`,
+    },
+  });
+}
+
 export async function sendChannelMessage(
   token: string,
   channelId: string,
