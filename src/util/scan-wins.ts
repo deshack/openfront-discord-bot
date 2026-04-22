@@ -1,19 +1,19 @@
-import { getClanSessions } from "./api_util";
+import { ScanWinsMessage } from "../types/queue";
 import {
   createScanJob,
-  createScanJobClanSession,
-  createScanJobPlayer,
+  createScanJobPlayerStatement,
   listGuildConfigsByGuild,
   listPlayerRegistrationsByGuild,
 } from "./db";
 
 export async function initClanSessions(
   db: D1Database,
+  queue: Queue<ScanWinsMessage>,
   guildId: string,
   channelId: string,
   startDate: string,
   endDate: string,
-) {
+): Promise<void> {
   const guildConfigs = await listGuildConfigsByGuild(db, guildId);
 
   if (guildConfigs.length === 0) {
@@ -22,30 +22,18 @@ export async function initClanSessions(
     return;
   }
 
-  for (const config of guildConfigs) {
-    const sessionsData = await getClanSessions(config.clanTag, startDate, endDate);
+  const messages = guildConfigs.map((config) => ({
+    body: {
+      guildId,
+      channelId,
+      clanTag: config.clanTag,
+      startDate,
+      endDate,
+    } satisfies ScanWinsMessage,
+  }));
 
-    if (!sessionsData) {
-      console.debug(
-        `No clan sessions found for clan ${config.clanTag}. Skipping. StartDate: ${startDate}, EndDate: ${endDate}`,
-      );
-
-      continue;
-    }
-
-    const wins = sessionsData.data.filter((session) => session.hasWon);
-
-    if (wins.length <= 0) {
-      console.debug(`No wins found for clan ${config.clanTag}. Skipping.`);
-
-      continue;
-    }
-
-    const jobId = await createScanJob(db, guildId, channelId, config.clanTag, "clan");
-
-    for (const win of wins) {
-      await createScanJobClanSession(db, jobId, win.gameId, win.score);
-    }
+  for (let i = 0; i < messages.length; i += 100) {
+    await queue.sendBatch(messages.slice(i, i + 100));
   }
 }
 
@@ -93,8 +81,12 @@ export async function initPlayerSessions(
     },
   );
 
-  for (const registration of registrations) {
-    await createScanJobPlayer(db, jobId, registration.playerId);
+  const statements = registrations.map((r) =>
+    createScanJobPlayerStatement(db, jobId, r.playerId),
+  );
+
+  for (let i = 0; i < statements.length; i += 100) {
+    await db.batch(statements.slice(i, i + 100));
   }
 
   return {

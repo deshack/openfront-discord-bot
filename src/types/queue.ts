@@ -9,3 +9,11 @@ export type FFAWinsMessage = {
   start: string;
   end: string;
 };
+
+export type ScanWinsMessage = {
+  guildId: string;
+  channelId: string;
+  clanTag: string;
+  startDate: string;
+  endDate: string;
+};

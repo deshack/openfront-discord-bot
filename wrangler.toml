@@ -37,6 +37,10 @@ binding = "CLAN_WINS_QUEUE"
 queue = "ffa-wins-queue"
 binding = "FFA_WINS_QUEUE"
 
+[[queues.producers]]
+queue = "scan-wins-queue"
+binding = "SCAN_WINS_QUEUE"
+
 [[queues.consumers]]
 queue = "clan-wins-queue"
 max_batch_size = 1
@@ -50,6 +54,13 @@ max_batch_size = 1
 max_batch_timeout = 0
 max_retries = 3
 max_concurrency = 5
+
+[[queues.consumers]]
+queue = "scan-wins-queue"
+max_batch_size = 5
+max_batch_timeout = 0
+max_retries = 3
+max_concurrency = 3
 
 [observability]
 [observability.logs]

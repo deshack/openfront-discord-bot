@@ -580,6 +580,19 @@ export async function createScanJobClanSession(
     .run();
 }
 
+export function createScanJobClanSessionStatement(
+  db: D1Database,
+  scanJobId: number,
+  gameId: string,
+  score: number,
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO scan_job_clan_sessions (scan_job_id, game_id, score) VALUES (?, ?, ?)`,
+    )
+    .bind(scanJobId, gameId, score);
+}
+
 /**
  * Atomically claims the next scan job for processing.
  * This prevents race conditions where multiple workers could claim the same job.
@@ -736,6 +749,16 @@ export async function createScanJobPlayer(
     )
     .bind(scanJobId, playerId)
     .run();
+}
+
+export function createScanJobPlayerStatement(
+  db: D1Database,
+  scanJobId: number,
+  playerId: string,
+): D1PreparedStatement {
+  return db
+    .prepare(`INSERT INTO scan_job_players (scan_job_id, player_id) VALUES (?, ?)`)
+    .bind(scanJobId, playerId);
 }
 
 export async function getPlayersJobBatch(

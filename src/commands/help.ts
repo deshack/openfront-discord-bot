@@ -66,7 +66,6 @@ const command: CommandHandler = {
                   "`/in-game-name set <user> <username>` — Map another user's in-game name (admin)",
                   "`/in-game-name remove <username>` — Remove any name mapping (admin)",
                   "`/in-game-name list` — List all name mappings",
-                  "`/scan-wins` — Backfill player stats from history *(Premium)*",
                 ].join("\n"),
               },
               {
@@ -74,6 +73,7 @@ const command: CommandHandler = {
                 value: [
                   "`/trigger-wins clan [hours]` — Manually trigger clan wins check",
                   "`/trigger-wins ffa [hours]` — Manually trigger FFA wins check",
+                  "`/scan-wins` — Backfill player stats from history",
                 ].join("\n"),
               },
               {

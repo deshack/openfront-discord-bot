@@ -1,7 +1,7 @@
 import { getClanWinMessage } from "../messages/clan_win";
 import { getFFAWinMessage } from "../messages/ffa_win";
 import { Env } from "../types/env";
-import { ClanWinsMessage, FFAWinsMessage } from "../types/queue";
+import { ClanWinsMessage, FFAWinsMessage, ScanWinsMessage } from "../types/queue";
 import { GameMode, GameType } from "../util/api_schemas";
 import {
   getClanSessions,
@@ -9,6 +9,8 @@ import {
   getPlayerSessions,
 } from "../util/api_util";
 import {
+  createScanJob,
+  createScanJobClanSessionStatement,
   deleteGuildChannelConfig,
   deleteGuildConfig,
   getGuildConfigsByClanTag,
@@ -368,6 +370,58 @@ async function processPlayer(
           error,
         );
       }
+    }
+  }
+}
+
+export async function handleScanWinsQueue(
+  batch: MessageBatch<ScanWinsMessage>,
+  env: Env,
+): Promise<void> {
+  for (const message of batch.messages) {
+    try {
+      const { guildId, channelId, clanTag, startDate, endDate } = message.body;
+
+      const sessionsData = await getClanSessions(clanTag, startDate, endDate);
+
+      if (!sessionsData) {
+        console.debug(
+          `No clan sessions found for clan ${clanTag}. StartDate: ${startDate}, EndDate: ${endDate}`,
+        );
+        message.ack();
+        continue;
+      }
+
+      const wins = sessionsData.data.filter((session) => session.hasWon);
+
+      if (wins.length === 0) {
+        console.debug(`No wins found for clan ${clanTag}.`);
+        message.ack();
+        continue;
+      }
+
+      const jobId = await createScanJob(env.DB, guildId, channelId, clanTag, "clan");
+
+      const statements = wins.map((win) =>
+        createScanJobClanSessionStatement(env.DB, jobId, win.gameId, win.score),
+      );
+
+      for (let i = 0; i < statements.length; i += 100) {
+        await env.DB.batch(statements.slice(i, i + 100));
+      }
+
+      console.info(
+        `Queued scan job ${jobId} for clan ${clanTag} with ${wins.length} win(s).`,
+      );
+
+      message.ack();
+    } catch (error) {
+      console.error(
+        `Failed to process scan wins queue message:`,
+        message.body,
+        error,
+      );
+      message.retry();
     }
   }
 }

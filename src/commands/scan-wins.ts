@@ -6,12 +6,20 @@ import {
   InteractionContextType,
   InteractionResponseType,
   MessageFlags,
-  PermissionFlagsBits,
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
 import { initClanSessions, initPlayerSessions } from "../util/scan-wins";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+function isOwner(
+  interaction: APIChatInputApplicationCommandInteraction,
+  ownerDiscordId: string,
+): boolean {
+  const userId = interaction.member?.user.id ?? interaction.user?.id;
+
+  return userId === ownerDiscordId;
+}
 
 function isValidDateString(dateStr: string): boolean {
   if (!DATE_REGEX.test(dateStr)) {
@@ -26,10 +34,9 @@ function isValidDateString(dateStr: string): boolean {
 const command: CommandHandler = {
   data: {
     name: "scan-wins",
-    description: "Backfill player stats from historical wins (Moderator only)",
+    description: "Backfill player stats from historical wins (bot owner only)",
     integration_types: [ApplicationIntegrationType.GuildInstall],
     contexts: [InteractionContextType.Guild],
-    default_member_permissions: String(PermissionFlagsBits.ManageGuild),
     dm_permission: false,
     options: [
       {
@@ -50,9 +57,21 @@ const command: CommandHandler = {
       },
     ],
   },
-  requiresPremium: true,
 
   async execute(interaction, env) {
+    const chatInteraction =
+      interaction as APIChatInputApplicationCommandInteraction;
+
+    if (!isOwner(chatInteraction, env.OWNER_DISCORD_ID)) {
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: "You are not authorized to use this command.",
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
+
     const guildId = interaction.guild_id;
     if (!guildId) {
       return {
@@ -64,8 +83,6 @@ const command: CommandHandler = {
       };
     }
 
-    const chatInteraction =
-      interaction as APIChatInputApplicationCommandInteraction;
     const options =
       (chatInteraction.data
         .options as APIApplicationCommandInteractionDataStringOption[]) ?? [];
@@ -130,6 +147,7 @@ const command: CommandHandler = {
     if (type === "clan") {
       await initClanSessions(
         env.DB,
+        env.SCAN_WINS_QUEUE,
         guildId,
         channelId,
         startDateIso,

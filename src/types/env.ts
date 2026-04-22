@@ -1,4 +1,4 @@
-import type { ClanWinsMessage, FFAWinsMessage } from "./queue";
+import type { ClanWinsMessage, FFAWinsMessage, ScanWinsMessage } from "./queue";
 
 export interface Env {
   DISCORD_TOKEN: string;
@@ -10,4 +10,5 @@ export interface Env {
   DB: D1Database;
   CLAN_WINS_QUEUE: Queue<ClanWinsMessage>;
   FFA_WINS_QUEUE: Queue<FFAWinsMessage>;
+  SCAN_WINS_QUEUE: Queue<ScanWinsMessage>;
 }

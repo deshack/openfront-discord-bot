@@ -4,14 +4,14 @@ import {
   InteractionType,
 } from "discord-api-types/v10";
 import { handleInteraction } from "./handlers/interaction";
-import { handleClanWinsQueue, handleFFAWinsQueue } from "./handlers/queue";
+import { handleClanWinsQueue, handleFFAWinsQueue, handleScanWinsQueue } from "./handlers/queue";
 import {
   handleClanWins,
   handleFFAWins,
   handleScanJobs,
 } from "./handlers/scheduled";
 import { Env } from "./types/env";
-import { ClanWinsMessage, FFAWinsMessage } from "./types/queue";
+import { ClanWinsMessage, FFAWinsMessage, ScanWinsMessage } from "./types/queue";
 import { buildMultipartResponse } from "./util/multipart";
 import { verifyDiscordRequest } from "./util/verify";
 
@@ -73,7 +73,7 @@ export default {
   },
 
   async queue(
-    batch: MessageBatch<ClanWinsMessage | FFAWinsMessage>,
+    batch: MessageBatch<ClanWinsMessage | FFAWinsMessage | ScanWinsMessage>,
     env: Env,
     ctx: ExecutionContext,
   ): Promise<void> {
@@ -84,6 +84,10 @@ export default {
     } else if (batch.queue === "ffa-wins-queue") {
       ctx.waitUntil(
         handleFFAWinsQueue(batch as MessageBatch<FFAWinsMessage>, env),
+      );
+    } else if (batch.queue === "scan-wins-queue") {
+      ctx.waitUntil(
+        handleScanWinsQueue(batch as MessageBatch<ScanWinsMessage>, env),
       );
     } else {
       console.warn(`Unknown queue: ${batch.queue}`);
