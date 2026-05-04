@@ -42,6 +42,9 @@ export async function mapUrl(map: string): Promise<string> {
   }
 
   const manifest = await getAssetManifest();
+
+  console.debug('Manifest', manifest);
+
   const hashedPath = manifest[`maps/${normalizedMap}/thumbnail.webp`];
   if (hashedPath) {
     return `${CDN_BASE.replace(/\/+$/, "")}${hashedPath}`;
