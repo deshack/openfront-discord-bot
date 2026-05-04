@@ -43,7 +43,7 @@ export async function mapUrl(map: string): Promise<string> {
 
   const manifest = await getAssetManifest();
 
-  console.debug('Manifest', manifest);
+  console.debug('Manifest: ' + JSON.stringify(manifest, null, 2));
 
   const hashedPath = manifest[`maps/${normalizedMap}/thumbnail.webp`];
   if (hashedPath) {
