@@ -144,7 +144,7 @@ async function processClanTag(
           clanPlayerUsernames.map((u) => stripClanTag(u)),
         );
 
-        const message = getClanWinMessage(
+        const message = await getClanWinMessage(
           win,
           clanPlayerUsernames,
           map,
@@ -289,7 +289,7 @@ async function processPlayer(
         const targetChannelId =
           guildChannelConfigCache.get(guildId)?.get(winType) ?? channelId;
 
-        const discordMessage = getFFAWinMessage({
+        const discordMessage = await getFFAWinMessage({
           discordUserId,
           gameId: win.gameId,
           gameInfo,

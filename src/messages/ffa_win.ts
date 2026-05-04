@@ -14,7 +14,7 @@ export interface FFAWinData {
   gameInfo?: GameInfo;
 }
 
-export function getFFAWinMessage(data: FFAWinData): MessageData {
+export async function getFFAWinMessage(data: FFAWinData): Promise<MessageData> {
   const { discordUserId, gameId, gameInfo } = data;
 
   if (!gameInfo) {
@@ -85,7 +85,7 @@ export function getFFAWinMessage(data: FFAWinData): MessageData {
         description: desc,
         color,
         image: {
-          url: mapUrl(map),
+          url: await mapUrl(map),
         },
         footer: { text: `Game ID: ${gameId}` },
         timestamp: gameInfo.start.toISOString(),
