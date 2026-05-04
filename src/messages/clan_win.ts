@@ -50,6 +50,10 @@ export async function getClanWinMessage(
     [Watch replay](${gameUrl(session.gameId)})
     `;
 
+  const mapThumbnailUrl = await mapUrl(map);
+
+  console.debug(`Map thumbnail URL for ${map}: ${mapThumbnailUrl}`);
+
   return {
     embeds: [
       {
@@ -57,7 +61,7 @@ export async function getClanWinMessage(
         description: desc,
         color: 0x00ff00,
         image: {
-          url: await mapUrl(map),
+          url: mapThumbnailUrl,
         },
         footer: { text: `Game ID: ${session.gameId}` },
         timestamp: gameStart.toISOString(),
