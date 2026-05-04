@@ -26,9 +26,15 @@ export function gameUrl(gameID: GameID): string {
 }
 
 let manifestPromise: Promise<Record<string, string>> | null = null;
+let manifestFetchedAt = 0;
+const MANIFEST_TTL_MS = 5 * 60 * 1000;
 
 function getAssetManifest(): Promise<Record<string, string>> {
-  manifestPromise ??= fetch(`${PROD_URL}/asset-manifest.json`)
+  if (manifestPromise && Date.now() - manifestFetchedAt < MANIFEST_TTL_MS) {
+    return manifestPromise;
+  }
+  manifestFetchedAt = Date.now();
+  manifestPromise = fetch(`${PROD_URL}/asset-manifest.json`)
     .then((r) => {
       console.debug(`Asset manifest fetch: ${r.status} ${r.statusText} (url: ${r.url})`);
       if (!r.ok) return {} as Record<string, string>;
