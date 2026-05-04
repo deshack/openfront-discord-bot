@@ -36,13 +36,18 @@ function getAssetManifest(): Promise<Record<string, string>> {
 
 export async function mapUrl(map: string): Promise<string> {
   const normalizedMap = map ? map.toLowerCase().replace(/[\s.()]+/g, "") : null;
-  if (!normalizedMap) return `${CDN_BASE}/images/GameplayScreenshot.png`;
+  if (!normalizedMap) {
+    console.debug("Map URL generation: Using default gameplay screenshot for invalid map");
+    return `${CDN_BASE}/images/GameplayScreenshot.png`;
+  }
 
   const manifest = await getAssetManifest();
   const hashedPath = manifest[`maps/${normalizedMap}/thumbnail.webp`];
   if (hashedPath) {
     return `${CDN_BASE.replace(/\/+$/, "")}${hashedPath}`;
   }
+
+  console.debug("Map URL generation: Fallback to default gameplay screenshot for missing map thumbnail. Normalized map name: " + normalizedMap);
 
   return `${CDN_BASE}/images/GameplayScreenshot.png`;
 }
