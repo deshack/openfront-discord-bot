@@ -144,12 +144,13 @@ async function processClanTag(
           clanPlayerUsernames.map((u) => stripClanTag(u)),
         );
 
-        const message = await getClanWinMessage(
+        const message = getClanWinMessage(
           win,
           clanPlayerUsernames,
           map,
           duration,
           usernameMappings,
+          gameInfoData.data.gitCommit,
         );
         const result = await sendChannelMessage(
           env.DISCORD_TOKEN,
@@ -289,10 +290,11 @@ async function processPlayer(
         const targetChannelId =
           guildChannelConfigCache.get(guildId)?.get(winType) ?? channelId;
 
-        const discordMessage = await getFFAWinMessage({
+        const discordMessage = getFFAWinMessage({
           discordUserId,
           gameId: win.gameId,
           gameInfo,
+          gitCommit: gameInfoData.data.gitCommit,
         });
         const result = await sendChannelMessage(
           env.DISCORD_TOKEN,

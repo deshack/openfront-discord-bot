@@ -1,6 +1,7 @@
 export type GameID = string;
 export const PROD_URL = "https://openfront.io";
-export const CDN_BASE = "https://ofcdn.dev/game_assets";
+const GITHUB_RAW_BASE =
+  "https://raw.githubusercontent.com/openfrontio/OpenFrontIO";
 const numWorkers = 20;
 
 export function simpleHash(str: string): number {
@@ -25,45 +26,15 @@ export function gameUrl(gameID: GameID): string {
   return `${PROD_URL}/${workerPath(gameID)}/game/${gameID}`;
 }
 
-let manifestPromise: Promise<Record<string, string>> | null = null;
-let manifestFetchedAt = 0;
-const MANIFEST_TTL_MS = 5 * 60 * 1000;
-
-function getAssetManifest(): Promise<Record<string, string>> {
-  if (manifestPromise && Date.now() - manifestFetchedAt < MANIFEST_TTL_MS) {
-    return manifestPromise;
-  }
-  manifestFetchedAt = Date.now();
-  manifestPromise = fetch(`${PROD_URL}/asset-manifest.json`)
-    .then((r) => {
-      console.debug(`Asset manifest fetch: ${r.status} ${r.statusText} (url: ${r.url})`);
-      if (!r.ok) return {} as Record<string, string>;
-      return r.json() as Promise<Record<string, string>>;
-    })
-    .catch((err) => {
-      console.debug(`Asset manifest fetch error: ${err}`);
-      return {} as Record<string, string>;
-    });
-  return manifestPromise;
-}
-
-export async function mapUrl(map: string): Promise<string> {
+export function mapUrl(map: string, commitSha?: string): string {
+  const ref = commitSha ?? "main";
   const normalizedMap = map ? map.toLowerCase().replace(/[\s.()]+/g, "") : null;
+
   if (!normalizedMap) {
-    console.debug("Map URL generation: Using default gameplay screenshot for invalid map");
-    return `${CDN_BASE}/images/GameplayScreenshot.png`;
+    return `${GITHUB_RAW_BASE}/${ref}/resources/images/GameplayScreenshot.png`;
   }
 
-  const manifest = await getAssetManifest();
-
-  console.debug(`Asset manifest loaded: ${Object.keys(manifest).length} entries`);
-
-  const hashedPath = manifest[`maps/${normalizedMap}/thumbnail.webp`];
-  if (hashedPath) {
-    return `${CDN_BASE.replace(/\/+$/, "")}${hashedPath}`;
-  }
-
-  console.debug("Map URL generation: Fallback to default gameplay screenshot for missing map thumbnail. Normalized map name: " + normalizedMap);
-
-  return `${CDN_BASE}/images/GameplayScreenshot.png`;
+  const url = `${GITHUB_RAW_BASE}/${ref}/resources/maps/${normalizedMap}/thumbnail.webp`;
+  console.debug(`Map thumbnail URL for ${map} (${ref}): ${url}`);
+  return url;
 }

@@ -12,10 +12,11 @@ export interface FFAWinData {
   discordUserId: string;
   gameId: string;
   gameInfo?: GameInfo;
+  gitCommit?: string;
 }
 
-export async function getFFAWinMessage(data: FFAWinData): Promise<MessageData> {
-  const { discordUserId, gameId, gameInfo } = data;
+export function getFFAWinMessage(data: FFAWinData): MessageData {
+  const { discordUserId, gameId, gameInfo, gitCommit } = data;
 
   if (!gameInfo) {
     return {
@@ -85,7 +86,7 @@ export async function getFFAWinMessage(data: FFAWinData): Promise<MessageData> {
         description: desc,
         color,
         image: {
-          url: await mapUrl(map),
+          url: mapUrl(map, gitCommit),
         },
         footer: { text: `Game ID: ${gameId}` },
         timestamp: gameInfo.start.toISOString(),

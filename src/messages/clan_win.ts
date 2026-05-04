@@ -9,13 +9,14 @@ import {
 import { stripClanTag } from "../util/db";
 import { gameUrl, mapUrl } from "../util/openfront";
 
-export async function getClanWinMessage(
+export function getClanWinMessage(
   session: ClanSession,
   clanPlayerUsernames: string[] = [],
   map: string,
   duration?: number,
   usernameMappings?: Map<string, string>,
-): Promise<MessageData> {
+  gitCommit?: string,
+): MessageData {
   const gameStart = new Date(session.gameStart);
 
   const formattedPlayers = clanPlayerUsernames.map((username) => {
@@ -50,7 +51,7 @@ export async function getClanWinMessage(
     [Watch replay](${gameUrl(session.gameId)})
     `;
 
-  const mapThumbnailUrl = await mapUrl(map);
+  const mapThumbnailUrl = mapUrl(map, gitCommit);
 
   console.debug(`Map thumbnail URL for ${map}: ${mapThumbnailUrl}`);
 
