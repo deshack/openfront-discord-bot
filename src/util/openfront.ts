@@ -29,8 +29,15 @@ let manifestPromise: Promise<Record<string, string>> | null = null;
 
 function getAssetManifest(): Promise<Record<string, string>> {
   manifestPromise ??= fetch(`${PROD_URL}/asset-manifest.json`)
-    .then((r) => (r.ok ? (r.json() as Promise<Record<string, string>>) : {}))
-    .catch(() => ({}));
+    .then((r) => {
+      console.debug(`Asset manifest fetch: ${r.status} ${r.statusText} (url: ${r.url})`);
+      if (!r.ok) return {} as Record<string, string>;
+      return r.json() as Promise<Record<string, string>>;
+    })
+    .catch((err) => {
+      console.debug(`Asset manifest fetch error: ${err}`);
+      return {} as Record<string, string>;
+    });
   return manifestPromise;
 }
 
@@ -43,7 +50,7 @@ export async function mapUrl(map: string): Promise<string> {
 
   const manifest = await getAssetManifest();
 
-  console.debug('Manifest: ' + JSON.stringify(manifest, null, 2));
+  console.debug(`Asset manifest loaded: ${Object.keys(manifest).length} entries`);
 
   const hashedPath = manifest[`maps/${normalizedMap}/thumbnail.webp`];
   if (hashedPath) {
