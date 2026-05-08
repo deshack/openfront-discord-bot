@@ -45,7 +45,7 @@ function buildOpenFrontHeaders(env: Env): Record<string, string> {
 
 async function apiFetch(url: string, env: Env): Promise<Response> {
   const headers = buildOpenFrontHeaders(env);
-  console.debug(`OpenFront API → ${url}`, headers);
+  // console.debug(`OpenFront API → ${url}`, {headers});
   return fetch(url, { headers });
 }
 
