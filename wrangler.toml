@@ -11,14 +11,14 @@ compatibility_date = "2026-01-18"
 # wrangler secret put OPENFRONT_USER_AGENT
 # wrangler secret put OPENFRONT_CUSTOM_HEADER_VALUE
 
-[vars]
-OPENFRONT_CUSTOM_HEADER_NAME = "x-deshack-access"
-
 # KV namespace for posted games tracking (has native TTL support)
 # Create with: wrangler kv namespace create DATA
 kv_namespaces = [
   { binding = "DATA", id = "e20449398e34450cb82b29c34628a401" }
 ]
+
+[vars]
+OPENFRONT_CUSTOM_HEADER_NAME = "x-deshack-access"
 
 # D1 database for guild configuration
 # Create with: wrangler d1 create openfront-bot-db
