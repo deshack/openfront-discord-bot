@@ -12,6 +12,7 @@ import {
   PlayerSession,
   PublicFFALeaderboardEntry,
 } from "./api_schemas";
+import { Env } from "../types/env";
 
 const API_PUBLIC_FFA_LEADERBOARD_PATH =
   "https://api.openfront.io/leaderboard/public/ffa";
@@ -28,11 +29,30 @@ export interface ApiResponse<T> {
   fetchedAt: number;
 }
 
-export async function getPublicFFALeaderboard(): Promise<
-  ApiResponse<PublicFFALeaderboardEntry[]> | undefined
-> {
-  const res = await fetch(API_PUBLIC_FFA_LEADERBOARD_PATH);
+function buildOpenFrontHeaders(env: Env): HeadersInit {
+  const headers: Record<string, string> = {};
+
+  if (env.OPENFRONT_USER_AGENT) {
+    headers["User-Agent"] = env.OPENFRONT_USER_AGENT;
+  }
+
+  if (env.OPENFRONT_CUSTOM_HEADER_NAME && env.OPENFRONT_CUSTOM_HEADER_VALUE) {
+    headers[env.OPENFRONT_CUSTOM_HEADER_NAME] = env.OPENFRONT_CUSTOM_HEADER_VALUE;
+  }
+
+  return headers;
+}
+
+export async function getPublicFFALeaderboard(
+  env: Env,
+): Promise<ApiResponse<PublicFFALeaderboardEntry[]> | undefined> {
+  const res = await fetch(API_PUBLIC_FFA_LEADERBOARD_PATH, {
+    headers: buildOpenFrontHeaders(env),
+  });
+
   if (res.status !== 200) {
+    const body = await res.text().catch(() => "(unreadable)");
+    console.error(`Failed to fetch FFA leaderboard: HTTP ${res.status} - ${body}`);
     return undefined;
   }
 
@@ -49,11 +69,16 @@ export async function getPublicFFALeaderboard(): Promise<
   };
 }
 
-export async function getClanLeaderboard(): Promise<
-  ApiResponse<ClanLeaderboardData> | undefined
-> {
-  const res = await fetch(API_CLAN_LEADERBOARD_PATH);
+export async function getClanLeaderboard(
+  env: Env,
+): Promise<ApiResponse<ClanLeaderboardData> | undefined> {
+  const res = await fetch(API_CLAN_LEADERBOARD_PATH, {
+    headers: buildOpenFrontHeaders(env),
+  });
+
   if (res.status !== 200) {
+    const body = await res.text().catch(() => "(unreadable)");
+    console.error(`Failed to fetch clan leaderboard: HTTP ${res.status} - ${body}`);
     return undefined;
   }
 
@@ -67,10 +92,14 @@ export async function getClanLeaderboard(): Promise<
 
 export async function getClanStats(
   clanTag: string,
+  env: Env,
 ): Promise<{ stats: ClanStats; fetchedAt: number } | undefined> {
   const url = `${API_CLAN_STATS_PATH}${encodeURIComponent(clanTag)}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: buildOpenFrontHeaders(env) });
+
   if (res.status !== 200) {
+    const body = await res.text().catch(() => "(unreadable)");
+    console.error(`Failed to fetch clan stats for ${clanTag}: HTTP ${res.status} - ${body}`);
     return undefined;
   }
 
@@ -84,10 +113,14 @@ export async function getClanStats(
 
 export async function getPlayerPublic(
   publicId: string,
+  env: Env,
 ): Promise<{ player: PlayerPublic; fetchedAt: number } | undefined> {
   const url = `${API_PLAYER_PATH}${encodeURIComponent(publicId)}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: buildOpenFrontHeaders(env) });
+
   if (res.status !== 200) {
+    const body = await res.text().catch(() => "(unreadable)");
+    console.error(`Failed to fetch player public for ${publicId}: HTTP ${res.status} - ${body}`);
     return undefined;
   }
 
@@ -105,15 +138,18 @@ export async function getClanSessions(
   clanTag: string,
   start: string,
   end: string,
+  env: Env,
 ): Promise<ApiResponse<ClanSession[]> | undefined> {
   const allSessions: ClanSession[] = [];
   let page = 1;
 
   while (true) {
     const url = `${API_CLAN_SESSIONS_PATH}${encodeURIComponent(clanTag)}/sessions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&page=${page}&limit=${SESSIONS_PAGE_LIMIT}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: buildOpenFrontHeaders(env) });
 
     if (res.status !== 200) {
+      const body = await res.text().catch(() => "(unreadable)");
+      console.error(`Failed to fetch clan sessions for ${clanTag}: HTTP ${res.status} - ${body}`);
       return undefined;
     }
 
@@ -139,7 +175,8 @@ export interface GetGameInfoOptions {
 
 export async function getGameInfo(
   gameId: string,
-  options?: GetGameInfoOptions,
+  options: GetGameInfoOptions | undefined,
+  env: Env,
 ): Promise<ApiResponse<GameInfoResponse> | undefined> {
   let url = `${API_GAME_INFO_PATH}${encodeURIComponent(gameId)}`;
 
@@ -147,7 +184,8 @@ export async function getGameInfo(
     url += "?turns=false";
   }
 
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: buildOpenFrontHeaders(env) });
+
   if (res.status !== 200) {
     const body = await res.text().catch(() => "(unreadable)");
     console.error(`Failed to fetch game info for ${gameId}: HTTP ${res.status} - ${body}`);
@@ -166,10 +204,14 @@ export async function getPlayerSessions(
   playerId: string,
   start: string,
   end: string,
+  env: Env,
 ): Promise<ApiResponse<PlayerSession[]> | undefined> {
   const url = `${API_PLAYER_SESSIONS_PATH}${encodeURIComponent(playerId)}/sessions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: buildOpenFrontHeaders(env) });
+
   if (res.status !== 200) {
+    const body = await res.text().catch(() => "(unreadable)");
+    console.error(`Failed to fetch player sessions for ${playerId}: HTTP ${res.status} - ${body}`);
     return undefined;
   }
 

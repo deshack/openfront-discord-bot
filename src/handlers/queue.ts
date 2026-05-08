@@ -95,7 +95,7 @@ async function processClanTag(
     return;
   }
 
-  const sessionsData = await getClanSessions(clanTag, start, end);
+  const sessionsData = await getClanSessions(clanTag, start, end, env);
   if (!sessionsData) {
     return;
   }
@@ -119,7 +119,7 @@ async function processClanTag(
         if (!gameInfoCache.has(win.gameId)) {
           gameInfoCache.set(
             win.gameId,
-            await getGameInfo(win.gameId, { includeTurns: false }),
+            await getGameInfo(win.gameId, { includeTurns: false }, env),
           );
         }
         const gameInfoData = gameInfoCache.get(win.gameId);
@@ -215,7 +215,7 @@ async function processPlayer(
 
   const startDate = new Date(start);
 
-  const sessionsData = await getPlayerSessions(playerId, start, end);
+  const sessionsData = await getPlayerSessions(playerId, start, end, env);
   if (!sessionsData) {
     return;
   }
@@ -272,7 +272,7 @@ async function processPlayer(
         if (!gameInfoCache.has(win.gameId)) {
           gameInfoCache.set(
             win.gameId,
-            await getGameInfo(win.gameId, { includeTurns: false }),
+            await getGameInfo(win.gameId, { includeTurns: false }, env),
           );
         }
         const gameInfoData = gameInfoCache.get(win.gameId);
@@ -384,7 +384,7 @@ export async function handleScanWinsQueue(
     try {
       const { guildId, channelId, clanTag, startDate, endDate } = message.body;
 
-      const sessionsData = await getClanSessions(clanTag, startDate, endDate);
+      const sessionsData = await getClanSessions(clanTag, startDate, endDate, env);
 
       if (!sessionsData) {
         console.debug(

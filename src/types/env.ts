@@ -11,4 +11,7 @@ export interface Env {
   CLAN_WINS_QUEUE: Queue<ClanWinsMessage>;
   FFA_WINS_QUEUE: Queue<FFAWinsMessage>;
   SCAN_WINS_QUEUE: Queue<ScanWinsMessage>;
+  OPENFRONT_USER_AGENT?: string;
+  OPENFRONT_CUSTOM_HEADER_NAME?: string;
+  OPENFRONT_CUSTOM_HEADER_VALUE?: string;
 }

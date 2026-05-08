@@ -27,7 +27,7 @@ const command: CommandHandler = {
       },
     ],
   },
-  async execute(interaction) {
+  async execute(interaction, env) {
     const chatInteraction =
       interaction as APIChatInputApplicationCommandInteraction;
     const options = chatInteraction.data.options ?? [];
@@ -48,7 +48,7 @@ const command: CommandHandler = {
       };
     }
 
-    const response = await getGameInfo(gameId, { includeTurns: false });
+    const response = await getGameInfo(gameId, { includeTurns: false }, env);
 
     if (!response) {
       return {

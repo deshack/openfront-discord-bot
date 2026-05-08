@@ -1,6 +1,7 @@
 import dedent from "dedent";
 import { MessageData } from "../structures/message";
 import { GameDifficulty, GameMode } from "../util/api_schemas";
+import { Env } from "../types/env";
 import { getPlayerPublic } from "../util/api_util";
 import { dateToDiscordTimestamp, TimestampStyles } from "../util/date_format";
 import { gameUrl } from "../util/openfront";
@@ -9,8 +10,9 @@ const RECENT_GAMES_LEN = 5;
 
 export async function getPlayerPublicMessage(
   publicId: string,
+  env: Env,
 ): Promise<MessageData | undefined> {
-  const playerPublic = await getPlayerPublic(publicId);
+  const playerPublic = await getPlayerPublic(publicId, env);
   if (playerPublic === undefined) {
     return undefined;
   }

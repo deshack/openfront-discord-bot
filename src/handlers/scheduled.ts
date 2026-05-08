@@ -95,7 +95,7 @@ async function handleClanSessionJob(
 ): Promise<void> {
   const gameInfoData = await getGameInfo(session.gameId, {
     includeTurns: false,
-  });
+  }, env);
 
   const clanPlayerUsernames: string[] =
     gameInfoData?.data.info.players
@@ -156,6 +156,7 @@ async function processPlayerDiscovery(
       player.playerId,
       job.startDate,
       job.endDate,
+      env,
     );
 
     if (!sessionsData) {
@@ -231,7 +232,7 @@ async function processFFAGame(
   try {
     const gameInfoData = await getGameInfo(game.gameId, {
       includeTurns: false,
-    });
+    }, env);
 
     if (!gameInfoData) {
       console.debug(`Game ${game.gameId} not found`);

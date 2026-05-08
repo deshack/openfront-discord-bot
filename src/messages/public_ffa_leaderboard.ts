@@ -1,6 +1,7 @@
 import { ButtonStyle, ComponentType } from "discord-api-types/v10";
 import dedent from "dedent";
 import { MessageData } from "../structures/message";
+import { Env } from "../types/env";
 import { getPublicFFALeaderboard } from "../util/api_util";
 
 const LEADERBOARD_PAGE_ENTRIES = 5;
@@ -10,8 +11,9 @@ const LEADERBOARD_MAX_PAGE =
 
 export async function getPublicFFALeaderboardMessage(
   page: number,
+  env: Env,
 ): Promise<MessageData | undefined> {
-  const pageData = await getPublicFFALeaderboard();
+  const pageData = await getPublicFFALeaderboard(env);
   if (pageData === undefined || pageData.data === undefined) {
     return undefined;
   }

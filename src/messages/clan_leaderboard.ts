@@ -1,6 +1,7 @@
 import { ButtonStyle, ComponentType } from "discord-api-types/v10";
 import dedent from "dedent";
 import { MessageData } from "../structures/message";
+import { Env } from "../types/env";
 import { getClanLeaderboard } from "../util/api_util";
 import { dateToDiscordTimestamp, TimestampStyles } from "../util/date_format";
 
@@ -8,8 +9,9 @@ const LEADERBOARD_PAGE_ENTRIES = 5;
 
 export async function getClanLeaderboardMessage(
   page: number,
+  env: Env,
 ): Promise<MessageData | undefined> {
-  const clanLeaderboardData = await getClanLeaderboard();
+  const clanLeaderboardData = await getClanLeaderboard(env);
   if (
     clanLeaderboardData === undefined ||
     clanLeaderboardData.data === undefined

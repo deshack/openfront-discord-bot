@@ -80,7 +80,7 @@ const command: CommandHandler = {
         };
       }
 
-      const message = await getPlayerPublicMessage(id);
+      const message = await getPlayerPublicMessage(id, env);
       if (!message) {
         return {
           type: InteractionResponseType.ChannelMessageWithSource,
@@ -113,7 +113,7 @@ const command: CommandHandler = {
         };
       }
 
-      const message = await getClanStatsMessage(tag);
+      const message = await getClanStatsMessage(tag, env);
       if (!message) {
         return {
           type: InteractionResponseType.ChannelMessageWithSource,

@@ -1,5 +1,6 @@
 import dedent from "dedent";
 import { MessageData } from "../structures/message";
+import { Env } from "../types/env";
 import { getClanSessions } from "../util/api_util";
 import { dateToDiscordTimestamp, TimestampStyles } from "../util/date_format";
 import { gameUrl } from "../util/openfront";
@@ -8,6 +9,7 @@ const SESSIONS_LIMIT = 10;
 
 export async function getClanSessionsMessage(
   clanTag: string,
+  env: Env,
   start?: string,
   end?: string,
 ): Promise<MessageData | undefined> {
@@ -21,6 +23,7 @@ export async function getClanSessionsMessage(
     clanTag,
     effectiveStart,
     effectiveEnd,
+    env,
   );
   if (sessionsData === undefined) {
     return undefined;

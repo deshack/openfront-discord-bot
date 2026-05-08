@@ -7,6 +7,12 @@ compatibility_date = "2026-01-18"
 # wrangler secret put DISCORD_PUBLIC_KEY
 # wrangler secret put DISCORD_CLIENT_ID
 # wrangler secret put OWNER_DISCORD_ID
+# Optional OpenFront API headers (omit to disable):
+# wrangler secret put OPENFRONT_USER_AGENT
+# wrangler secret put OPENFRONT_CUSTOM_HEADER_VALUE
+
+[vars]
+OPENFRONT_CUSTOM_HEADER_NAME = "x-deshack-access"
 
 # KV namespace for posted games tracking (has native TTL support)
 # Create with: wrangler kv namespace create DATA

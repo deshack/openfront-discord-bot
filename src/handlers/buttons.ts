@@ -29,7 +29,7 @@ export async function handleButton(
 
   if (customId.startsWith("lb-view-page-")) {
     const page = parseInt(customId.substring("lb-view-page-".length));
-    const message = await getPublicFFALeaderboardMessage(page);
+    const message = await getPublicFFALeaderboardMessage(page, env);
 
     if (!message) {
       return {
@@ -49,7 +49,7 @@ export async function handleButton(
 
   if (customId.startsWith("clan-lb-view-page-")) {
     const page = parseInt(customId.substring("clan-lb-view-page-".length));
-    const message = await getClanLeaderboardMessage(page);
+    const message = await getClanLeaderboardMessage(page, env);
 
     if (!message) {
       return {

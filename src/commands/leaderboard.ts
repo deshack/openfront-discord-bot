@@ -39,7 +39,7 @@ const command: CommandHandler = {
     const type = typeOption?.value;
 
     if (type === "players") {
-      const message = await getPublicFFALeaderboardMessage(0);
+      const message = await getPublicFFALeaderboardMessage(0, env);
       if (!message) {
         return {
           type: InteractionResponseType.ChannelMessageWithSource,
@@ -56,7 +56,7 @@ const command: CommandHandler = {
     }
 
     if (type === "clans") {
-      const message = await getClanLeaderboardMessage(0);
+      const message = await getClanLeaderboardMessage(0, env);
       if (!message) {
         return {
           type: InteractionResponseType.ChannelMessageWithSource,

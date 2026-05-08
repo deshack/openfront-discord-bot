@@ -1,11 +1,13 @@
 import dedent from "dedent";
 import { MessageData } from "../structures/message";
+import { Env } from "../types/env";
 import { getClanStats } from "../util/api_util";
 
 export async function getClanStatsMessage(
   clanTag: string,
+  env: Env,
 ): Promise<MessageData | undefined> {
-  const clanStats = await getClanStats(clanTag);
+  const clanStats = await getClanStats(clanTag, env);
   if (clanStats === undefined) {
     return undefined;
   }
