@@ -29,7 +29,7 @@ export interface ApiResponse<T> {
   fetchedAt: number;
 }
 
-function buildOpenFrontHeaders(env: Env): HeadersInit {
+function buildOpenFrontHeaders(env: Env): Record<string, string> {
   const headers: Record<string, string> = {};
 
   if (env.OPENFRONT_USER_AGENT) {
@@ -43,12 +43,16 @@ function buildOpenFrontHeaders(env: Env): HeadersInit {
   return headers;
 }
 
+async function apiFetch(url: string, env: Env): Promise<Response> {
+  const headers = buildOpenFrontHeaders(env);
+  console.debug(`OpenFront API → ${url}`, headers);
+  return fetch(url, { headers });
+}
+
 export async function getPublicFFALeaderboard(
   env: Env,
 ): Promise<ApiResponse<PublicFFALeaderboardEntry[]> | undefined> {
-  const res = await fetch(API_PUBLIC_FFA_LEADERBOARD_PATH, {
-    headers: buildOpenFrontHeaders(env),
-  });
+  const res = await apiFetch(API_PUBLIC_FFA_LEADERBOARD_PATH, env);
 
   if (res.status !== 200) {
     const body = await res.text().catch(() => "(unreadable)");
@@ -72,9 +76,7 @@ export async function getPublicFFALeaderboard(
 export async function getClanLeaderboard(
   env: Env,
 ): Promise<ApiResponse<ClanLeaderboardData> | undefined> {
-  const res = await fetch(API_CLAN_LEADERBOARD_PATH, {
-    headers: buildOpenFrontHeaders(env),
-  });
+  const res = await apiFetch(API_CLAN_LEADERBOARD_PATH, env);
 
   if (res.status !== 200) {
     const body = await res.text().catch(() => "(unreadable)");
@@ -95,7 +97,7 @@ export async function getClanStats(
   env: Env,
 ): Promise<{ stats: ClanStats; fetchedAt: number } | undefined> {
   const url = `${API_CLAN_STATS_PATH}${encodeURIComponent(clanTag)}`;
-  const res = await fetch(url, { headers: buildOpenFrontHeaders(env) });
+  const res = await apiFetch(url, env);
 
   if (res.status !== 200) {
     const body = await res.text().catch(() => "(unreadable)");
@@ -116,7 +118,7 @@ export async function getPlayerPublic(
   env: Env,
 ): Promise<{ player: PlayerPublic; fetchedAt: number } | undefined> {
   const url = `${API_PLAYER_PATH}${encodeURIComponent(publicId)}`;
-  const res = await fetch(url, { headers: buildOpenFrontHeaders(env) });
+  const res = await apiFetch(url, env);
 
   if (res.status !== 200) {
     const body = await res.text().catch(() => "(unreadable)");
@@ -145,7 +147,7 @@ export async function getClanSessions(
 
   while (true) {
     const url = `${API_CLAN_SESSIONS_PATH}${encodeURIComponent(clanTag)}/sessions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&page=${page}&limit=${SESSIONS_PAGE_LIMIT}`;
-    const res = await fetch(url, { headers: buildOpenFrontHeaders(env) });
+    const res = await apiFetch(url, env);
 
     if (res.status !== 200) {
       const body = await res.text().catch(() => "(unreadable)");
@@ -184,7 +186,7 @@ export async function getGameInfo(
     url += "?turns=false";
   }
 
-  const res = await fetch(url, { headers: buildOpenFrontHeaders(env) });
+  const res = await apiFetch(url, env);
 
   if (res.status !== 200) {
     const body = await res.text().catch(() => "(unreadable)");
@@ -207,7 +209,7 @@ export async function getPlayerSessions(
   env: Env,
 ): Promise<ApiResponse<PlayerSession[]> | undefined> {
   const url = `${API_PLAYER_SESSIONS_PATH}${encodeURIComponent(playerId)}/sessions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
-  const res = await fetch(url, { headers: buildOpenFrontHeaders(env) });
+  const res = await apiFetch(url, env);
 
   if (res.status !== 200) {
     const body = await res.text().catch(() => "(unreadable)");
