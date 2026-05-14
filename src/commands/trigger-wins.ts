@@ -44,7 +44,7 @@ const command: CommandHandler = {
         description: "Hours to look back (default: 2)",
         required: false,
         min_value: 1,
-        max_value: 24,
+        max_value: 168,
       },
     ],
   },
