@@ -2,6 +2,7 @@ import { Env } from "../types/env";
 import type { ClanWinsMessage, FFAWinsMessage } from "../types/queue";
 import { GameMode, GameType } from "../util/api_schemas";
 import { getGameInfo, getPlayerSessions } from "../util/api_util";
+import { splitInto24hWindows } from "../util/date_util";
 import {
   claimNextPendingJob,
   completeClanSessionJob,
@@ -318,8 +319,8 @@ export async function handleClanWins(env: Env, hours = 2): Promise<void> {
   }
 
   const now = new Date();
-  const start = new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
-  const end = now.toISOString();
+  const startDate = new Date(now.getTime() - hours * 60 * 60 * 1000);
+  const windows = splitInto24hWindows(startDate, now);
 
   const clanTags = [...new Set(configs.map((c) => c.config.clanTag))];
 
@@ -329,16 +330,18 @@ export async function handleClanWins(env: Env, hours = 2): Promise<void> {
     chunks.push(clanTags.slice(i, i + batchSize));
   }
 
-  for (let i = 0; i < chunks.length; i += 100) {
-    await env.CLAN_WINS_QUEUE.sendBatch(
-      chunks.slice(i, i + 100).map((tags) => ({
-        body: { clanTags: tags, start, end } satisfies ClanWinsMessage,
-      })),
-    );
+  const messages = windows.flatMap((w) =>
+    chunks.map((tags) => ({
+      body: { clanTags: tags, start: w.start, end: w.end } satisfies ClanWinsMessage,
+    })),
+  );
+
+  for (let i = 0; i < messages.length; i += 100) {
+    await env.CLAN_WINS_QUEUE.sendBatch(messages.slice(i, i + 100));
   }
 
   console.info(
-    `Dispatched ${chunks.length} clan win messages to queue (${clanTags.length} tags total).`,
+    `Dispatched ${messages.length} clan win messages to queue (${clanTags.length} tags × ${windows.length} window(s)).`,
   );
 }
 
@@ -354,8 +357,8 @@ export async function handleFFAWins(env: Env, hours = 2): Promise<void> {
   }
 
   const now = new Date();
-  const start = new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
-  const end = now.toISOString();
+  const startDate = new Date(now.getTime() - hours * 60 * 60 * 1000);
+  const windows = splitInto24hWindows(startDate, now);
 
   const playerIds = new Set<string>();
   for (const { registrations } of guildRegistrations) {
@@ -371,15 +374,17 @@ export async function handleFFAWins(env: Env, hours = 2): Promise<void> {
     chunks.push(ids.slice(i, i + batchSize));
   }
 
-  for (let i = 0; i < chunks.length; i += 100) {
-    await env.FFA_WINS_QUEUE.sendBatch(
-      chunks.slice(i, i + 100).map((pids) => ({
-        body: { playerIds: pids, start, end } satisfies FFAWinsMessage,
-      })),
-    );
+  const messages = windows.flatMap((w) =>
+    chunks.map((pids) => ({
+      body: { playerIds: pids, start: w.start, end: w.end } satisfies FFAWinsMessage,
+    })),
+  );
+
+  for (let i = 0; i < messages.length; i += 100) {
+    await env.FFA_WINS_QUEUE.sendBatch(messages.slice(i, i + 100));
   }
 
   console.info(
-    `Dispatched ${chunks.length} FFA player messages to queue (${ids.length} players total).`,
+    `Dispatched ${messages.length} FFA player messages to queue (${ids.length} players × ${windows.length} window(s)).`,
   );
 }

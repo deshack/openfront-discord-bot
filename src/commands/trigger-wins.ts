@@ -40,11 +40,11 @@ const command: CommandHandler = {
       },
       {
         type: ApplicationCommandOptionType.Integer,
-        name: "hours",
-        description: "Hours to look back (default: 2)",
+        name: "days",
+        description: "Days to look back (default: 1)",
         required: false,
         min_value: 1,
-        max_value: 168,
+        max_value: 7,
       },
     ],
   },
@@ -68,12 +68,13 @@ const command: CommandHandler = {
     const typeOption = options.find(
       (o) => o.name === "type",
     ) as APIApplicationCommandInteractionDataStringOption | undefined;
-    const hoursOption = options.find(
-      (o) => o.name === "hours",
+    const daysOption = options.find(
+      (o) => o.name === "days",
     ) as APIApplicationCommandInteractionDataIntegerOption | undefined;
 
     const type = typeOption?.value;
-    const hours = (hoursOption?.value as number | undefined) ?? 2;
+    const days = (daysOption?.value as number | undefined) ?? 1;
+    const hours = days * 24;
 
     if (type === "clan") {
       await handleClanWins(env, hours);
@@ -84,7 +85,7 @@ const command: CommandHandler = {
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
       data: {
-        content: `Triggered ${type} wins check for the last ${hours} hour(s).`,
+        content: `Triggered ${type} wins check for the last ${days} day(s).`,
         flags: MessageFlags.Ephemeral,
       },
     };

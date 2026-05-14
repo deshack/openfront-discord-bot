@@ -5,6 +5,7 @@ import {
   listGuildConfigsByGuild,
   listPlayerRegistrationsByGuild,
 } from "./db";
+import { splitInto24hWindows } from "./date_util";
 
 export async function initClanSessions(
   db: D1Database,
@@ -22,15 +23,19 @@ export async function initClanSessions(
     return;
   }
 
-  const messages = guildConfigs.map((config) => ({
-    body: {
-      guildId,
-      channelId,
-      clanTag: config.clanTag,
-      startDate,
-      endDate,
-    } satisfies ScanWinsMessage,
-  }));
+  const windows = splitInto24hWindows(new Date(startDate), new Date(endDate));
+
+  const messages = guildConfigs.flatMap((config) =>
+    windows.map((w) => ({
+      body: {
+        guildId,
+        channelId,
+        clanTag: config.clanTag,
+        startDate: w.start,
+        endDate: w.end,
+      } satisfies ScanWinsMessage,
+    })),
+  );
 
   for (let i = 0; i < messages.length; i += 100) {
     await queue.sendBatch(messages.slice(i, i + 100));
