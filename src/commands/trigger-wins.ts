@@ -1,5 +1,4 @@
 import {
-  APIApplicationCommandInteractionDataIntegerOption,
   APIApplicationCommandInteractionDataStringOption,
   APIChatInputApplicationCommandInteraction,
   ApplicationCommandOptionType,
@@ -10,6 +9,7 @@ import {
 } from "discord-api-types/v10";
 import { handleClanWins, handleFFAWins } from "../handlers/scheduled";
 import { CommandHandler } from "../structures/command";
+import { isValidDateString } from "../util/date_util";
 
 function isOwner(
   interaction: APIChatInputApplicationCommandInteraction,
@@ -39,12 +39,17 @@ const command: CommandHandler = {
         ],
       },
       {
-        type: ApplicationCommandOptionType.Integer,
-        name: "days",
-        description: "Days to look back (default: 1)",
+        type: ApplicationCommandOptionType.String,
+        name: "start_date",
+        description:
+          "Start date to look back from (YYYY-MM-DD format, e.g., 2025-11-01)",
+        required: true,
+      },
+      {
+        type: ApplicationCommandOptionType.String,
+        name: "clan",
+        description: "Limit the clan wins check to a single clan tag",
         required: false,
-        min_value: 1,
-        max_value: 7,
       },
     ],
   },
@@ -65,27 +70,58 @@ const command: CommandHandler = {
 
     const options = chatInteraction.data.options ?? [];
 
-    const typeOption = options.find(
-      (o) => o.name === "type",
-    ) as APIApplicationCommandInteractionDataStringOption | undefined;
-    const daysOption = options.find(
-      (o) => o.name === "days",
-    ) as APIApplicationCommandInteractionDataIntegerOption | undefined;
+    const typeOption = options.find((o) => o.name === "type") as
+      | APIApplicationCommandInteractionDataStringOption
+      | undefined;
+    const startDateOption = options.find((o) => o.name === "start_date") as
+      | APIApplicationCommandInteractionDataStringOption
+      | undefined;
+    const clanOption = options.find((o) => o.name === "clan") as
+      | APIApplicationCommandInteractionDataStringOption
+      | undefined;
 
     const type = typeOption?.value;
-    const days = (daysOption?.value as number | undefined) ?? 1;
-    const hours = days * 24;
+    const startDateStr = startDateOption?.value;
+
+    if (!startDateStr || !isValidDateString(startDateStr)) {
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content:
+            "Invalid start date format. Please use YYYY-MM-DD (e.g., 2025-11-01).",
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
+
+    const startDate = new Date(`${startDateStr}T00:00:00.000Z`);
+    const now = new Date();
+
+    if (startDate > now) {
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: "Start date cannot be in the future.",
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
+
+    const hours = (now.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+    const clanTag = clanOption?.value?.trim().toUpperCase();
 
     if (type === "clan") {
-      await handleClanWins(env, hours);
+      await handleClanWins(env, hours, clanTag);
     } else if (type === "ffa") {
       await handleFFAWins(env, hours);
     }
 
+    const clanSuffix = type === "clan" && clanTag ? ` (clan: ${clanTag})` : "";
+
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
       data: {
-        content: `Triggered ${type} wins check for the last ${days} day(s).`,
+        content: `Triggered ${type} wins check from ${startDateStr} to now${clanSuffix}.`,
         flags: MessageFlags.Ephemeral,
       },
     };

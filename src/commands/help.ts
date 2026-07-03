@@ -71,8 +71,7 @@ const command: CommandHandler = {
               {
                 name: "Bot Owner",
                 value: [
-                  "`/trigger-wins clan [hours]` — Manually trigger clan wins check",
-                  "`/trigger-wins ffa [hours]` — Manually trigger FFA wins check",
+                  "`/trigger-wins type:<ffa|clan> start_date:<YYYY-MM-DD> [clan]` — Manually trigger wins check from a date to now (optionally for one clan)",
                   "`/scan-wins` — Backfill player stats from history",
                 ].join("\n"),
               },

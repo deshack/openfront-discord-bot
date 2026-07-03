@@ -8,9 +8,8 @@ import {
   MessageFlags,
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
+import { isValidDateString } from "../util/date_util";
 import { initClanSessions, initPlayerSessions } from "../util/scan-wins";
-
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 function isOwner(
   interaction: APIChatInputApplicationCommandInteraction,
@@ -19,16 +18,6 @@ function isOwner(
   const userId = interaction.member?.user.id ?? interaction.user?.id;
 
   return userId === ownerDiscordId;
-}
-
-function isValidDateString(dateStr: string): boolean {
-  if (!DATE_REGEX.test(dateStr)) {
-    return false;
-  }
-
-  const date = new Date(`${dateStr}T00:00:00Z`);
-
-  return !isNaN(date.getTime()) && date.toISOString().startsWith(dateStr);
 }
 
 const command: CommandHandler = {

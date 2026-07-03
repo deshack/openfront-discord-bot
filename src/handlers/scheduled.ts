@@ -307,12 +307,19 @@ async function processFFAGame(
   }
 }
 
-export async function handleClanWins(env: Env, hours = 2): Promise<void> {
+export async function handleClanWins(
+  env: Env,
+  hours = 2,
+  clanTag?: string,
+): Promise<void> {
   console.debug("Running scheduled task for clan wins.");
 
   const configs = await listGuildConfigs(env.DB);
+  const filteredConfigs = clanTag
+    ? configs.filter((c) => c.config.clanTag === clanTag)
+    : configs;
 
-  if (configs.length === 0) {
+  if (filteredConfigs.length === 0) {
     console.info("No clan wins configs found. Skipping scheduled task.");
 
     return;
@@ -322,7 +329,7 @@ export async function handleClanWins(env: Env, hours = 2): Promise<void> {
   const startDate = new Date(now.getTime() - hours * 60 * 60 * 1000);
   const windows = splitInto24hWindows(startDate, now);
 
-  const clanTags = [...new Set(configs.map((c) => c.config.clanTag))];
+  const clanTags = [...new Set(filteredConfigs.map((c) => c.config.clanTag))];
 
   const batchSize = Math.ceil(clanTags.length / MAX_MESSAGES_PER_RUN);
   const chunks: string[][] = [];
