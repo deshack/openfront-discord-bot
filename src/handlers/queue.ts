@@ -25,8 +25,10 @@ import { sendChannelMessage } from "../util/discord";
 import {
   isFFAGamePosted,
   isGamePosted,
+  isTeamGamePosted,
   markFFAGamePosted,
   markGamePosted,
+  markTeamGamePosted,
 } from "../util/kv";
 import { checkPremiumForScheduled, PremiumCheckResult } from "../util/premium";
 import { recordPlayerWin } from "../util/stats";
@@ -220,15 +222,16 @@ async function processPlayer(
     return;
   }
 
-  const ffaWins = sessionsData.data.filter(
+  const wins = sessionsData.data.filter(
     (session) =>
       session.hasWon &&
       session.gameType === GameType.Public &&
-      session.gameMode === GameMode.FFA &&
+      (session.gameMode === GameMode.FFA ||
+        (session.gameMode === GameMode.Team && session.gameRankedType)) &&
       session.gameStart >= startDate.toISOString(),
   );
 
-  if (ffaWins.length === 0) {
+  if (wins.length === 0) {
     return;
   }
 
@@ -251,19 +254,18 @@ async function processPlayer(
     }
   }
 
-  for (const win of ffaWins) {
+  for (const win of wins) {
+    const isTeamWin = win.gameMode === GameMode.Team;
+
     for (const { guildId, discordUserId, channelId } of guildEntries) {
       if (removedGuildIds.has(guildId)) {
         continue;
       }
 
       try {
-        const alreadyPosted = await isFFAGamePosted(
-          env.DATA,
-          guildId,
-          playerId,
-          win.gameId,
-        );
+        const alreadyPosted = isTeamWin
+          ? await isTeamGamePosted(env.DATA, guildId, win.gameId)
+          : await isFFAGamePosted(env.DATA, guildId, playerId, win.gameId);
 
         if (alreadyPosted) {
           continue;
@@ -292,6 +294,7 @@ async function processPlayer(
 
         const discordMessage = getFFAWinMessage({
           discordUserId,
+          clientId: playerId,
           gameId: win.gameId,
           gameInfo,
           gitCommit: gameInfoData.data.gitCommit,
@@ -320,11 +323,17 @@ async function processPlayer(
         }
 
         if (result.success) {
-          await markFFAGamePosted(env.DATA, guildId, playerId, win.gameId);
+          if (isTeamWin) {
+            await markTeamGamePosted(env.DATA, guildId, win.gameId);
+          } else {
+            await markFFAGamePosted(env.DATA, guildId, playerId, win.gameId);
+          }
 
           const isNotRanked = gameInfo.config.rankedType === undefined;
+          const winner = gameInfo.winner;
 
-          if (isNotRanked && gameInfo.winner) {
+          if (isNotRanked && winner?.type === "player") {
+            const winnerClientId = winner.clientID;
             const premiumStatus =
               premiumCache.get(guildId) ??
               (await checkPremiumForScheduled(
@@ -348,7 +357,7 @@ async function processPlayer(
 
               const winnerPlayer = gameInfo.players.find(
                 (p) =>
-                  p.clientID === gameInfo.winner?.clientID &&
+                  p.clientID === winnerClientId &&
                   guildConfigs.some((c) => c.clanTag === p.clanTag),
               );
 

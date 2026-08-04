@@ -1,5 +1,6 @@
 const POSTED_PREFIX = "posted:";
 const FFA_POSTED_PREFIX = "ffa_posted:";
+const TEAM_RANKED_POSTED_PREFIX = "team_ranked_posted:";
 const POSTED_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
 export async function isGamePosted(
@@ -39,6 +40,25 @@ export async function markFFAGamePosted(
   gameId: string,
 ): Promise<void> {
   const key = `${FFA_POSTED_PREFIX}${guildId}:${playerId}:${gameId}`;
+  await kv.put(key, String(Date.now()), { expirationTtl: POSTED_TTL_SECONDS });
+}
+
+export async function isTeamGamePosted(
+  kv: KVNamespace,
+  guildId: string,
+  gameId: string,
+): Promise<boolean> {
+  const key = `${TEAM_RANKED_POSTED_PREFIX}${guildId}:${gameId}`;
+  const value = await kv.get(key);
+  return value !== null;
+}
+
+export async function markTeamGamePosted(
+  kv: KVNamespace,
+  guildId: string,
+  gameId: string,
+): Promise<void> {
+  const key = `${TEAM_RANKED_POSTED_PREFIX}${guildId}:${gameId}`;
   await kv.put(key, String(Date.now()), { expirationTtl: POSTED_TTL_SECONDS });
 }
 

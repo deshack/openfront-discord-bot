@@ -77,6 +77,7 @@ export interface PlayerSession {
   gameEnd: string;
   gameType: GameType;
   gameMode: GameMode;
+  gameRankedType?: string;
   clientId: string;
   username: string;
   clanTag: string | null;
@@ -314,7 +315,7 @@ export interface GameInfoRaw {
   end: number;
   duration: number;
   num_turns: number;
-  winner: ["player", string] | null;
+  winner: ["player", string] | ["team", string, ...string[]] | null;
 }
 
 export interface GameIntent {
@@ -355,7 +356,9 @@ export interface GameInfo {
   end: Date;
   duration: number;
   numTurns: number;
-  winner?: { type: "player"; clientID: string };
+  winner?:
+    | { type: "player"; clientID: string }
+    | { type: "team"; teamName: string; clientIds: string[] };
 }
 
 export interface GameInfoResponse {
@@ -393,7 +396,13 @@ export function gameInfoResponseRawToGameInfoResponse(
       winner:
         raw.info.winner === null
           ? undefined
-          : { type: raw.info.winner[0], clientID: raw.info.winner[1] },
+          : raw.info.winner[0] === "team"
+            ? {
+                type: "team",
+                teamName: raw.info.winner[1],
+                clientIds: raw.info.winner.slice(2),
+              }
+            : { type: "player", clientID: raw.info.winner[1] },
     },
     turns: raw.turns,
   };

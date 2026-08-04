@@ -254,15 +254,16 @@ async function processFFAGame(
       return;
     }
 
-    if (!gameInfo.winner) {
+    if (!gameInfo.winner || gameInfo.winner.type !== "player") {
       console.debug(`Game ${game.gameId} has no winner, skipping`);
       await completeFFAGameJob(env.DB, job.id, game.gameId);
 
       return;
     }
 
+    const winnerClientId = gameInfo.winner.clientID;
     const winnerPlayer = gameInfo.players.find(
-      (p) => p.clientID === gameInfo.winner?.clientID,
+      (p) => p.clientID === winnerClientId,
     );
 
     if (!winnerPlayer) {
