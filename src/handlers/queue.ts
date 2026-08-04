@@ -294,7 +294,7 @@ async function processPlayer(
 
         const discordMessage = getFFAWinMessage({
           discordUserId,
-          clientId: playerId,
+          clientId: win.clientId,
           gameId: win.gameId,
           gameInfo,
           gitCommit: gameInfoData.data.gitCommit,
