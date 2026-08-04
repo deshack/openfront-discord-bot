@@ -227,7 +227,9 @@ async function processPlayer(
       session.hasWon &&
       session.gameType === GameType.Public &&
       (session.gameMode === GameMode.FFA ||
-        (session.gameMode === GameMode.Team && session.gameRankedType)) &&
+        (session.gameMode === GameMode.Team &&
+          session.gameRankedType &&
+          session.gameRankedType !== "unranked")) &&
       session.gameStart >= startDate.toISOString(),
   );
 
