@@ -19,6 +19,7 @@ import {
   listGuildConfigsByGuild,
   getRegistrationsByPlayerId,
   getUsernameMappingsByUsernames,
+  removeRegistrationsByPlayerId,
   stripClanTag,
   unregisterPlayer,
   updateLastSeenUsername,
@@ -239,6 +240,15 @@ async function processPlayer(
   const startDate = new Date(start);
 
   const sessionsData = await getPlayerSessions(playerId, start, end, env);
+
+  if (sessionsData === "not_found") {
+    console.warn(
+      `Player ID ${playerId} not found on OpenFront. Removing registration(s).`,
+    );
+    await removeRegistrationsByPlayerId(env.DB, playerId);
+    return;
+  }
+
   if (!sessionsData) {
     return;
   }

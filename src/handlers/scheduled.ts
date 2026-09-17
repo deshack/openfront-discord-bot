@@ -20,6 +20,7 @@ import {
   listAllPlayerRegistrations,
   listGuildConfigs,
   listGuildConfigsByGuild,
+  removeRegistrationsByPlayerId,
   ScanJob,
   ScanJobClanSession,
   ScanJobFFAGame,
@@ -165,6 +166,16 @@ async function processPlayerDiscovery(
       job.endDate,
       env,
     );
+
+    if (sessionsData === "not_found") {
+      console.warn(
+        `Player ID ${player.playerId} not found on OpenFront. Removing registration(s).`,
+      );
+      await removeRegistrationsByPlayerId(env.DB, player.playerId);
+      await completePlayerJob(env.DB, job.id, player.playerId);
+
+      return;
+    }
 
     if (!sessionsData) {
       console.debug(

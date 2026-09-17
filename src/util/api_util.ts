@@ -158,9 +158,14 @@ export async function getPlayerSessions(
   start: string,
   end: string,
   env: Env,
-): Promise<ApiResponse<PlayerSession[]> | undefined> {
+): Promise<ApiResponse<PlayerSession[]> | "not_found" | undefined> {
   const url = `${API_PLAYER_SESSIONS_PATH}${encodeURIComponent(playerId)}/sessions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
   const res = await apiFetch(url, env);
+
+  if (res.status === 404) {
+    console.warn(`Player sessions not found for ${playerId} (HTTP 404) — Player ID is likely invalid or the account was deleted.`);
+    return "not_found";
+  }
 
   if (res.status !== 200) {
     const body = await res.text().catch(() => "(unreadable)");

@@ -370,6 +370,18 @@ export async function unregisterPlayer(
   return result.meta.changes > 0;
 }
 
+export async function removeRegistrationsByPlayerId(
+  db: D1Database,
+  playerId: string,
+): Promise<number> {
+  const result = await db
+    .prepare("DELETE FROM player_registrations WHERE player_id = ?")
+    .bind(playerId)
+    .run();
+
+  return result.meta.changes;
+}
+
 export async function getPlayerRegistration(
   db: D1Database,
   guildId: string,
