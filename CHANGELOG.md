@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.4.0
+
+### Improvements
+
+- **`/player register <player_id>` now accepts your full profile URL** — the game's account modal only offers a profile link (e.g. `https://openfront.io/#modal=profile&publicID=dAG8d3CL`) rather than a copyable Player ID, so the command now extracts the `publicID` automatically when you paste the whole URL.
+
+---
+
 ## v2.3.0
 
 ### New Features
