@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.3.0
+
+### New Features
+
+- **`/whois player_id <id>`** — Direct Player ID → Discord user lookup, something the legacy name-mapping table could never do.
+
+### Improvements
+
+- **`/whois` now checks `/player` registrations first** — `/whois username` matches against `profile_username`/`last_seen_username` before falling back to the legacy `username_mappings` table, and `/whois user` shows the registered Player ID/username alongside any remaining legacy mappings instead of only the legacy ones.
+
+---
+
 ## v2.2.0
 
 ### New Features
