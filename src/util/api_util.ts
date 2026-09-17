@@ -14,7 +14,7 @@ import { Env } from "../types/env";
 
 const API_CLAN_STATS_PATH = "https://api.openfront.io/public/clan/";
 const API_CLAN_SESSIONS_PATH = "https://api.openfront.io/public/clan/";
-const API_PLAYER_PATH = "https://api.openfront.io/player/";
+const API_PLAYER_PATH = "https://api.openfront.io/public/player/";
 const API_PLAYER_SESSIONS_PATH = "https://api.openfront.io/public/player/";
 const API_GAME_INFO_PATH = "https://api.openfront.io/public/game/";
 
