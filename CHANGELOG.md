@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.2.0
+
+### New Features
+
+- **Admins can register another user's Player ID** — `/player register <player_id> <user>` (Manage Server permission required), mirroring how the old `/in-game-name set` let admins set another user's mapping.
+
+### Improvements
+
+- **`/player list` is now paginated** — 15 entries per page with ⬅️/➡️ buttons, so it no longer risks exceeding Discord's embed description limit for servers with many registrations.
+
+---
+
 ## v2.1.1
 
 ### Bug Fixes
