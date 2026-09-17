@@ -3,7 +3,7 @@ import { MessageData } from "../structures/message";
 import { Env } from "../types/env";
 import { getClanSessions } from "../util/api_util";
 import { dateToDiscordTimestamp, TimestampStyles } from "../util/date_format";
-import { gameUrl } from "../util/openfront";
+import { ofStatsReplayUrl, replayUrl } from "../util/openfront";
 
 const SESSIONS_LIMIT = 10;
 
@@ -46,7 +46,7 @@ export async function getClanSessionsMessage(
       sessionsStr += dedent`
         ${winIndicator} **${session.playerTeams}** ${dateToDiscordTimestamp(gameStart, TimestampStyles.RelativeTime)}
             Clan players: \`${session.clanPlayerCount}\` | Total: \`${session.totalPlayerCount}\` | Teams: \`${session.numTeams}\`
-            Score: \`${session.score.toFixed(2)}\` | [Watch replay](${gameUrl(session.gameId)})
+            Score: \`${session.score.toFixed(2)}\` | [Watch replay](${replayUrl(session.gameId)}) | [Replay on OFStats](${ofStatsReplayUrl(session.gameId)})
         `;
     });
   }

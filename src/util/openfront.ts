@@ -2,6 +2,8 @@ export type GameID = string;
 export const PROD_URL = "https://openfront.io";
 const GITHUB_RAW_BASE =
   "https://raw.githubusercontent.com/openfrontio/OpenFrontIO";
+const OPENFRONT_TOOLS_URL = "https://openfront-tools.frozenpenguin.media";
+const OFSTATS_REPLAY_URL = "https://replay.ofstats.io/game";
 const numWorkers = 20;
 
 export function simpleHash(str: string): number {
@@ -24,6 +26,14 @@ export function workerPath(gameID: GameID): string {
 
 export function gameUrl(gameID: GameID): string {
   return `${PROD_URL}/${workerPath(gameID)}/game/${gameID}`;
+}
+
+export function replayUrl(gameID: GameID): string {
+  return `${OPENFRONT_TOOLS_URL}/?gameid=${gameID}`;
+}
+
+export function ofStatsReplayUrl(gameID: GameID): string {
+  return `${OFSTATS_REPLAY_URL}/${gameID}`;
 }
 
 export function mapUrl(map: string, commitSha?: string): string {

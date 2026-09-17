@@ -7,7 +7,7 @@ import {
   TimestampStyles,
 } from "../util/date_format";
 import { stripClanTag } from "../util/db";
-import { gameUrl, mapUrl } from "../util/openfront";
+import { mapUrl, ofStatsReplayUrl, replayUrl } from "../util/openfront";
 
 export interface ClanWinPlayer {
   username: string;
@@ -54,7 +54,7 @@ export function getClanWinMessage(
     ${durationLine}
     **Started**: ${dateToDiscordTimestamp(gameStart, TimestampStyles.RelativeTime)}
 
-    [Watch replay](${gameUrl(session.gameId)})
+    [Watch replay](${replayUrl(session.gameId)}) | [Replay on OFStats](${ofStatsReplayUrl(session.gameId)})
     `;
 
   const mapThumbnailUrl = mapUrl(map, gitCommit);

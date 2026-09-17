@@ -6,7 +6,7 @@ import {
   formatDuration,
   TimestampStyles,
 } from "../util/date_format";
-import { gameUrl, mapUrl } from "../util/openfront";
+import { gameUrl, mapUrl, ofStatsReplayUrl, replayUrl } from "../util/openfront";
 
 export interface FFAWinData {
   discordUserId: string;
@@ -110,7 +110,7 @@ function get2v2Description(
     **Duration**: ${duration}
     **Started**: ${startedAt}
 
-    [Watch replay](${gameUrl(gameId)})
+    [Watch replay](${replayUrl(gameId)}) | [Replay on OFStats](${ofStatsReplayUrl(gameId)})
     `;
 }
 
@@ -145,7 +145,7 @@ function getGenericDescription(
       **Duration**: ${duration}
       **Started**: ${startedAt}
 
-      [Watch replay](${gameUrl(gameId)})
+      [Watch replay](${replayUrl(gameId)}) | [Replay on OFStats](${ofStatsReplayUrl(gameId)})
       `;
   }
 
@@ -160,6 +160,6 @@ function getGenericDescription(
     **Duration**: ${duration}
     **Started**: ${startedAt}
 
-    [Watch replay](${gameUrl(gameId)})
+    [Watch replay](${replayUrl(gameId)}) | [Replay on OFStats](${ofStatsReplayUrl(gameId)})
     `;
 }

@@ -4,7 +4,7 @@ import { GameDifficulty, GameMode } from "../util/api_schemas";
 import { Env } from "../types/env";
 import { getPlayerPublic } from "../util/api_util";
 import { dateToDiscordTimestamp, TimestampStyles } from "../util/date_format";
-import { gameUrl } from "../util/openfront";
+import { ofStatsReplayUrl, replayUrl } from "../util/openfront";
 
 const RECENT_GAMES_LEN = 5;
 
@@ -29,7 +29,7 @@ export async function getPlayerPublicMessage(
           TimestampStyles.RelativeTime,
         )}
             ${game.mode} - ${game.difficulty} - ${game.map} - ${game.type}
-            [Watch replay](${gameUrl(game.gameId)})
+            [Watch replay](${replayUrl(game.gameId)}) | [Replay on OFStats](${ofStatsReplayUrl(game.gameId)})
         `;
   });
 
