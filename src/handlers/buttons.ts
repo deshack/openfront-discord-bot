@@ -3,6 +3,7 @@ import {
   InteractionResponseType,
   MessageFlags,
 } from "discord-api-types/v10";
+import { getPlayerListMessage } from "../messages/player_list";
 import { getRankMessage } from "../messages/rank";
 import { CommandContext } from "../structures/command";
 import { Env } from "../types/env";
@@ -24,6 +25,26 @@ export async function handleButton(
   ctx?: CommandContext,
 ): Promise<InteractionResponseWithFiles> {
   const customId = interaction.data.custom_id;
+
+  if (customId.startsWith("player-list|")) {
+    const guildId = interaction.guild_id;
+    if (!guildId) {
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: "This feature can only be used in a server.",
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
+
+    const page = parseInt(customId.substring("player-list|".length)) || 0;
+
+    return {
+      type: InteractionResponseType.UpdateMessage,
+      data: await getPlayerListMessage(env.DB, guildId, page),
+    };
+  }
 
   if (customId.startsWith("rank-refresh|")) {
     const guildId = interaction.guild_id;

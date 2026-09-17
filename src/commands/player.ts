@@ -1,5 +1,6 @@
 import {
   APIApplicationCommandInteractionDataSubcommandOption,
+  APIApplicationCommandInteractionDataUserOption,
   APIApplicationCommandInteraction,
   APIChatInputApplicationCommandInteraction,
   APIInteractionResponse,
@@ -10,12 +11,12 @@ import {
   MessageFlags,
   PermissionFlagsBits,
 } from "discord-api-types/v10";
+import { getPlayerListMessage } from "../messages/player_list";
 import { CommandHandler } from "../structures/command";
 import { Env } from "../types/env";
 import { getPlayerPublic } from "../util/api_util";
 import {
   getPlayerRegistration,
-  listPlayerRegistrationsByGuild,
   registerPlayer,
   setProfileUsername,
   unregisterPlayer,
@@ -118,7 +119,34 @@ export async function executePlayerCommand(
       };
     }
 
-    await registerPlayer(env.DB, guildId, channelId, discordUserId, playerId);
+    const userOption = subcommand.options?.find((o) => o.name === "user") as
+      | APIApplicationCommandInteractionDataUserOption
+      | undefined;
+
+    let targetDiscordUserId = discordUserId;
+
+    if (userOption) {
+      if (!hasManageGuild(chatInteraction)) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content:
+              "You need the Manage Server permission to register another user's Player ID.",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
+      targetDiscordUserId = String(userOption.value);
+    }
+
+    await registerPlayer(
+      env.DB,
+      guildId,
+      channelId,
+      targetDiscordUserId,
+      playerId,
+    );
 
     try {
       const profile = await getPlayerPublic(playerId, env);
@@ -132,7 +160,7 @@ export async function executePlayerCommand(
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
       data: {
-        content: `<@${discordUserId}> has registered for win tracking. Their FFA and team wins will be announced in this channel.`,
+        content: `<@${targetDiscordUserId}> has registered for win tracking. Their FFA and team wins will be announced in this channel.`,
       },
     };
   }
@@ -198,35 +226,9 @@ export async function executePlayerCommand(
       };
     }
 
-    const registrations = await listPlayerRegistrationsByGuild(env.DB, guildId);
-
-    if (registrations.length === 0) {
-      return {
-        type: InteractionResponseType.ChannelMessageWithSource,
-        data: {
-          content:
-            "No players registered. Use `/player register <player_id>` to add one.",
-          flags: MessageFlags.Ephemeral,
-        },
-      };
-    }
-
-    const lines = registrations.map((r) => {
-      const username = r.profileUsername ?? r.lastSeenUsername ?? "(unknown)";
-      return `**${username}** — \`${r.playerId}\` — <@${r.discordUserId}>`;
-    });
-
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
-      data: {
-        embeds: [
-          {
-            title: "Registered Players",
-            description: lines.join("\n"),
-          },
-        ],
-        flags: MessageFlags.Ephemeral,
-      },
+      data: await getPlayerListMessage(env.DB, guildId, 0),
     };
   }
 
@@ -258,6 +260,13 @@ const command: CommandHandler = {
             name: "player_id",
             description: "Your OpenFront Player ID",
             required: true,
+          },
+          {
+            type: ApplicationCommandOptionType.User,
+            name: "user",
+            description:
+              "The Discord user to register (admin only — omit to register yourself)",
+            required: false,
           },
         ],
       },
