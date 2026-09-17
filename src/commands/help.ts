@@ -33,7 +33,8 @@ const command: CommandHandler = {
                   "`/game <game-id>` — Get a link to a game",
                   "`/game-deaths <game-id>` — List deaths in a game",
                   "`/whois username <name>` — Find the Discord user for an in-game name",
-                  "`/whois user <@user>` — Find all in-game names for a Discord user",
+                  "`/whois player_id <id>` — Find the Discord user for a Player ID",
+                  "`/whois user <@user>` — Find the Player ID/in-game names for a Discord user",
                 ].join("\n"),
               },
               {
