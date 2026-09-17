@@ -1,5 +1,24 @@
 # Changelog
 
+## v2.0.0
+
+### Breaking Changes
+
+- **`/leaderboard` removed** — The `players` and `clans` subcommands, which only proxied OpenFront's public leaderboard APIs, have been removed. `/rank` (the server's own premium leaderboard) is unaffected.
+- **`/ffa` and `/in-game-name set` deprecated** — Both remain registered but now just point users to the new `/player` command instead of performing their old action.
+
+### New Features
+
+- **`/player` command** — Replaces `/ffa` as the generic registration command (`register`/`unregister`/`status`), now used for both FFA and team win tracking.
+- **PublicID-based team win matching** — Team game win mentions and the premium `/rank` leaderboard now identify players by their persistent Player ID (publicID) instead of in-game username, matching how FFA already worked. Falls back to the legacy username mapping for players who haven't registered with `/player` yet.
+- **"Replay on OFStats" link** — Win embeds and session lists now include a second replay link pointing to OFStats, alongside the primary replay link.
+
+### Improvements
+
+- **Watch replay links now use OpenFront Tools** — Replaces the openfront.io replay link in embeds with OpenFront Tools, which also supports older versions of the game.
+
+---
+
 ## v1.10.1
 
 ### Bug Fixes
