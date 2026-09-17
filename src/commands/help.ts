@@ -38,20 +38,18 @@ const command: CommandHandler = {
               },
               {
                 name: "Leaderboards",
-                value: [
-                  "`/leaderboard players` — Top players",
-                  "`/leaderboard clans` — Top clans",
-                  "`/rank` — Clan leaderboard rankings *(Premium)*",
-                ].join("\n"),
+                value: ["`/rank` — Clan leaderboard rankings *(Premium)*"].join(
+                  "\n",
+                ),
               },
               {
                 name: "Personal Tracking",
                 value: [
-                  "`/ffa register <player_id>` — Register for FFA win announcements",
-                  "`/ffa unregister` — Unregister from FFA announcements",
-                  "`/ffa status` — Check your registration status",
-                  "`/in-game-name set <username>` — Link your in-game name for win mentions",
-                  "`/in-game-name remove-my-name` — Remove your in-game name link",
+                  "`/player register <player_id>` — Register your Player ID for FFA & team win announcements",
+                  "`/player unregister` — Stop win announcements",
+                  "`/player status` — Check your registration status",
+                  "`/ffa` — *(Deprecated, use `/player` instead)*",
+                  "`/in-game-name remove-my-name` — Remove your legacy in-game name link",
                 ].join("\n"),
               },
               {
@@ -63,9 +61,8 @@ const command: CommandHandler = {
                   "`/setup ranked-channel` — Set channel for ranked win announcements",
                   "`/setup disable` — Disable win announcements",
                   "`/setup status` — View current bot configuration",
-                  "`/in-game-name set <user> <username>` — Map another user's in-game name (admin)",
-                  "`/in-game-name remove <username>` — Remove any name mapping (admin)",
-                  "`/in-game-name list` — List all name mappings",
+                  "`/in-game-name remove <username>` — Remove a legacy name mapping (admin)",
+                  "`/in-game-name list` — List legacy name mappings *(Deprecated, win mentions now use `/player`)*",
                 ].join("\n"),
               },
               {

@@ -98,20 +98,21 @@ async function handleClanSessionJob(
     includeTurns: false,
   }, env);
 
-  const clanPlayerUsernames: string[] =
-    gameInfoData?.data.info.players
-      .filter((player) => player.clanTag === job.clanTag)
-      .map((player) => player.username) ?? [];
+  const clanPlayers =
+    gameInfoData?.data.info.players.filter(
+      (player) => player.clanTag === job.clanTag,
+    ) ?? [];
 
-  for (const username of clanPlayerUsernames) {
+  for (const player of clanPlayers) {
     await recordPlayerWin(
       env.DB,
       job.guildId,
-      username,
+      player.username,
       session.gameId,
       GameMode.Team,
       session.score,
       gameInfoData!.data.info.start.toISOString(),
+      player.persistentID,
     );
   }
 
@@ -292,6 +293,7 @@ async function processFFAGame(
       GameMode.FFA,
       0,
       gameInfo.start.toISOString(),
+      winnerPlayer.persistentID,
     );
 
     console.debug(

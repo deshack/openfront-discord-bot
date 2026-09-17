@@ -1,5 +1,4 @@
 import {
-  ClanLeaderboardData,
   ClanSession,
   ClanSessionsApiResponse,
   ClanStats,
@@ -10,14 +9,9 @@ import {
   PlayerPublicRaw,
   playerPublicRawToPlayerPublic,
   PlayerSession,
-  PublicFFALeaderboardEntry,
 } from "./api_schemas";
 import { Env } from "../types/env";
 
-const API_PUBLIC_FFA_LEADERBOARD_PATH =
-  "https://api.openfront.io/leaderboard/public/ffa";
-const API_CLAN_LEADERBOARD_PATH =
-  "https://api.openfront.io/public/clans/leaderboard";
 const API_CLAN_STATS_PATH = "https://api.openfront.io/public/clan/";
 const API_CLAN_SESSIONS_PATH = "https://api.openfront.io/public/clan/";
 const API_PLAYER_PATH = "https://api.openfront.io/player/";
@@ -47,49 +41,6 @@ async function apiFetch(url: string, env: Env): Promise<Response> {
   const headers = buildOpenFrontHeaders(env);
   // console.debug(`OpenFront API → ${url}`, {headers});
   return fetch(url, { headers });
-}
-
-export async function getPublicFFALeaderboard(
-  env: Env,
-): Promise<ApiResponse<PublicFFALeaderboardEntry[]> | undefined> {
-  const res = await apiFetch(API_PUBLIC_FFA_LEADERBOARD_PATH, env);
-
-  if (res.status !== 200) {
-    const body = await res.text().catch(() => "(unreadable)");
-    console.error(`Failed to fetch FFA leaderboard: HTTP ${res.status} - ${body}`);
-    return undefined;
-  }
-
-  const json = (await res.json()) as PublicFFALeaderboardEntry[];
-  json.forEach((value) => {
-    if (value.user === null) {
-      value.user = undefined;
-    }
-  });
-
-  return {
-    data: json,
-    fetchedAt: Date.now(),
-  };
-}
-
-export async function getClanLeaderboard(
-  env: Env,
-): Promise<ApiResponse<ClanLeaderboardData> | undefined> {
-  const res = await apiFetch(API_CLAN_LEADERBOARD_PATH, env);
-
-  if (res.status !== 200) {
-    const body = await res.text().catch(() => "(unreadable)");
-    console.error(`Failed to fetch clan leaderboard: HTTP ${res.status} - ${body}`);
-    return undefined;
-  }
-
-  const json = (await res.json()) as ClanLeaderboardData;
-
-  return {
-    data: json,
-    fetchedAt: Date.now(),
-  };
 }
 
 export async function getClanStats(

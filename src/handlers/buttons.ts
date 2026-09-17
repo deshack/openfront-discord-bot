@@ -3,8 +3,6 @@ import {
   InteractionResponseType,
   MessageFlags,
 } from "discord-api-types/v10";
-import { getClanLeaderboardMessage } from "../messages/clan_leaderboard";
-import { getPublicFFALeaderboardMessage } from "../messages/public_ffa_leaderboard";
 import { getRankMessage } from "../messages/rank";
 import { CommandContext } from "../structures/command";
 import { Env } from "../types/env";
@@ -26,46 +24,6 @@ export async function handleButton(
   ctx?: CommandContext,
 ): Promise<InteractionResponseWithFiles> {
   const customId = interaction.data.custom_id;
-
-  if (customId.startsWith("lb-view-page-")) {
-    const page = parseInt(customId.substring("lb-view-page-".length));
-    const message = await getPublicFFALeaderboardMessage(page, env);
-
-    if (!message) {
-      return {
-        type: InteractionResponseType.ChannelMessageWithSource,
-        data: {
-          content: "Error fetching leaderboard.",
-          flags: MessageFlags.Ephemeral,
-        },
-      };
-    }
-
-    return {
-      type: InteractionResponseType.UpdateMessage,
-      data: message,
-    };
-  }
-
-  if (customId.startsWith("clan-lb-view-page-")) {
-    const page = parseInt(customId.substring("clan-lb-view-page-".length));
-    const message = await getClanLeaderboardMessage(page, env);
-
-    if (!message) {
-      return {
-        type: InteractionResponseType.ChannelMessageWithSource,
-        data: {
-          content: "Error fetching leaderboard.",
-          flags: MessageFlags.Ephemeral,
-        },
-      };
-    }
-
-    return {
-      type: InteractionResponseType.UpdateMessage,
-      data: message,
-    };
-  }
 
   if (customId.startsWith("rank-refresh|")) {
     const guildId = interaction.guild_id;

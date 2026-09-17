@@ -222,26 +222,6 @@ export function stripClanTag(input: string): string {
   return input.replace(/^\[.*?\]\s*/, "").trim();
 }
 
-export async function setUsernameMapping(
-  db: D1Database,
-  guildId: string,
-  username: string,
-  discordUserId: string,
-): Promise<void> {
-  const stripped = stripClanTag(username);
-
-  await db
-    .prepare(
-      `INSERT INTO username_mappings (guild_id, username, discord_user_id, created_at, updated_at)
-       VALUES (?, ?, ?, unixepoch(), unixepoch())
-       ON CONFLICT (guild_id, username) DO UPDATE SET
-         discord_user_id = excluded.discord_user_id,
-         updated_at = unixepoch()`,
-    )
-    .bind(guildId, stripped, discordUserId)
-    .run();
-}
-
 export async function removeUsernameMapping(
   db: D1Database,
   guildId: string,
@@ -407,6 +387,32 @@ export async function getPlayerRegistration(
     discordUserId: row.discord_user_id,
     playerId: row.player_id,
   };
+}
+
+export async function getPlayerRegistrationsByPlayerIds(
+  db: D1Database,
+  guildId: string,
+  playerIds: string[],
+): Promise<Map<string, string>> {
+  if (playerIds.length === 0) {
+    return new Map();
+  }
+
+  const placeholders = playerIds.map(() => "?").join(", ");
+  const { results } = await db
+    .prepare(
+      `SELECT player_id, discord_user_id FROM player_registrations WHERE guild_id = ? AND player_id IN (${placeholders})`,
+    )
+    .bind(guildId, ...playerIds)
+    .all<Pick<PlayerRegistrationRow, "player_id" | "discord_user_id">>();
+
+  const map = new Map<string, string>();
+
+  for (const row of results) {
+    map.set(row.player_id, row.discord_user_id);
+  }
+
+  return map;
 }
 
 export async function listPlayerRegistrationsByGuild(

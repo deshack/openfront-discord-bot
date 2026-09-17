@@ -9,20 +9,26 @@ import {
 import { stripClanTag } from "../util/db";
 import { gameUrl, mapUrl } from "../util/openfront";
 
+export interface ClanWinPlayer {
+  username: string;
+  publicId?: string;
+}
+
 export function getClanWinMessage(
   session: ClanSession,
-  clanPlayerUsernames: string[] = [],
+  clanPlayers: ClanWinPlayer[] = [],
   map: string,
   duration?: number,
+  publicIdMappings?: Map<string, string>,
   usernameMappings?: Map<string, string>,
   gitCommit?: string,
 ): MessageData {
   const gameStart = new Date(session.gameStart);
 
-  const formattedPlayers = clanPlayerUsernames.map((username) => {
-    const discordUserId = usernameMappings?.get(
-      stripClanTag(username).toLowerCase(),
-    );
+  const formattedPlayers = clanPlayers.map(({ username, publicId }) => {
+    const discordUserId =
+      (publicId && publicIdMappings?.get(publicId)) ??
+      usernameMappings?.get(stripClanTag(username).toLowerCase());
 
     if (discordUserId) {
       return `${username} (<@${discordUserId}>)`;

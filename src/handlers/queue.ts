@@ -14,6 +14,7 @@ import {
   deleteGuildChannelConfig,
   deleteGuildConfig,
   getGuildConfigsByClanTag,
+  getPlayerRegistrationsByPlayerIds,
   listGuildChannelConfigs,
   listGuildConfigsByGuild,
   getRegistrationsByPlayerId,
@@ -131,26 +132,38 @@ async function processClanTag(
           continue;
         }
 
-        const clanPlayerUsernames = gameInfoData.data.info.players
+        const clanPlayers = gameInfoData.data.info.players
           .filter(
             (player) =>
               player.clanTag === clanTag && player.stats !== undefined,
           )
-          .map((player) => player.username);
+          .map((player) => ({
+            username: player.username,
+            publicId: player.persistentID,
+          }));
         const map = gameInfoData.data.info.config.gameMap;
         const duration = gameInfoData.data.info.duration;
+
+        const publicIdMappings = await getPlayerRegistrationsByPlayerIds(
+          env.DB,
+          guildId,
+          clanPlayers
+            .map((p) => p.publicId)
+            .filter((id): id is string => id !== undefined),
+        );
 
         const usernameMappings = await getUsernameMappingsByUsernames(
           env.DB,
           guildId,
-          clanPlayerUsernames.map((u) => stripClanTag(u)),
+          clanPlayers.map((p) => stripClanTag(p.username)),
         );
 
         const message = getClanWinMessage(
           win,
-          clanPlayerUsernames,
+          clanPlayers,
           map,
           duration,
+          publicIdMappings,
           usernameMappings,
           gameInfoData.data.gitCommit,
         );
@@ -182,8 +195,8 @@ async function processClanTag(
             ));
           premiumCache.set(guildId, premiumStatus);
 
-          if (premiumStatus.isPremium && clanPlayerUsernames.length > 0) {
-            for (const username of clanPlayerUsernames) {
+          if (premiumStatus.isPremium && clanPlayers.length > 0) {
+            for (const { username, publicId } of clanPlayers) {
               await recordPlayerWin(
                 env.DB,
                 guildId,
@@ -192,6 +205,7 @@ async function processClanTag(
                 GameMode.Team,
                 win.score,
                 win.gameStart,
+                publicId,
               );
             }
           }
@@ -372,6 +386,7 @@ async function processPlayer(
                   GameMode.FFA,
                   0,
                   gameInfo.start.toISOString(),
+                  winnerPlayer.persistentID,
                 );
               }
             }

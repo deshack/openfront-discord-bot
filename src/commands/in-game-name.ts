@@ -13,7 +13,6 @@ import {
   getUsernameMappings,
   removeUsernameMapping,
   removeUsernameMappingsByDiscordUser,
-  setUsernameMapping,
   stripClanTag,
 } from "../util/db";
 
@@ -30,7 +29,8 @@ function hasManageGuild(
 const command: CommandHandler = {
   data: {
     name: "in-game-name",
-    description: "Map in-game usernames to Discord users for win mentions",
+    description:
+      "Deprecated — win mentions now use /player. Manage legacy username mappings",
     integration_types: [ApplicationIntegrationType.GuildInstall],
     contexts: [InteractionContextType.Guild],
     dm_permission: false,
@@ -38,23 +38,7 @@ const command: CommandHandler = {
       {
         type: ApplicationCommandOptionType.Subcommand,
         name: "set",
-        description: "Map an in-game username to a Discord user",
-        options: [
-          {
-            type: ApplicationCommandOptionType.String,
-            name: "username",
-            description:
-              "The in-game username (clan tag will be stripped automatically)",
-            required: true,
-          },
-          {
-            type: ApplicationCommandOptionType.User,
-            name: "user",
-            description:
-              "The Discord user to map (admin only — omit to set your own name)",
-            required: false,
-          },
-        ],
+        description: "Deprecated — use /player register instead",
       },
       {
         type: ApplicationCommandOptionType.Subcommand,
@@ -111,64 +95,12 @@ const command: CommandHandler = {
     }
 
     if (subcommand.name === "set") {
-      const userOption = subcommand.options?.find((o) => o.name === "user");
-      const usernameOption = subcommand.options?.find(
-        (o) => o.name === "username",
-      );
-
-      const rawUsername =
-        usernameOption && "value" in usernameOption
-          ? String(usernameOption.value).trim()
-          : undefined;
-
-      if (!rawUsername) {
-        return {
-          type: InteractionResponseType.ChannelMessageWithSource,
-          data: {
-            content: "Username is required.",
-            flags: MessageFlags.Ephemeral,
-          },
-        };
-      }
-
-      let discordUserId: string;
-
-      if (userOption && "value" in userOption) {
-        if (!hasManageGuild(chatInteraction)) {
-          return {
-            type: InteractionResponseType.ChannelMessageWithSource,
-            data: {
-              content:
-                "You need the Manage Server permission to set another user's in-game name.",
-              flags: MessageFlags.Ephemeral,
-            },
-          };
-        }
-
-        discordUserId = String(userOption.value);
-      } else {
-        discordUserId =
-          chatInteraction.member?.user.id ?? chatInteraction.user?.id ?? "";
-
-        if (!discordUserId) {
-          return {
-            type: InteractionResponseType.ChannelMessageWithSource,
-            data: {
-              content: "Could not determine your Discord user ID.",
-              flags: MessageFlags.Ephemeral,
-            },
-          };
-        }
-      }
-
-      const username = stripClanTag(rawUsername);
-
-      await setUsernameMapping(env.DB, guildId, username, discordUserId);
-
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
-          content: `Mapped in-game username **${username}** to <@${discordUserId}>.`,
+          content:
+            "`/in-game-name set` is deprecated. Team game matching and win mentions now use your Player ID. Use `/player register <player_id>` instead.",
+          flags: MessageFlags.Ephemeral,
         },
       };
     }
@@ -283,7 +215,7 @@ const command: CommandHandler = {
           type: InteractionResponseType.ChannelMessageWithSource,
           data: {
             content:
-              "No username mappings configured. Use `/in-game-name set` to add one.",
+              "No username mappings configured. Use `/player register <player_id>` for new win tracking.",
             flags: MessageFlags.Ephemeral,
           },
         };
