@@ -1,5 +1,24 @@
 # Changelog
 
+## v2.1.0
+
+### New Features
+
+- **`/player list`** — Admin-only command that lists everyone registered in a server with their username, Player ID, and Discord mention.
+- **`/info player` shows the profile username** — Now displays the player's in-game profile username (from the Player API), when they've set one.
+
+### Improvements
+
+- **Automatic username tracking** — A profile username is fetched once at `/player register` time, and a last-seen username is updated from the game-info API whenever any win posts (FFA, ranked, or team), independent of premium status. `/player list` shows whichever is available.
+- **`npm run backfill-usernames`** — One-off script to backfill profile usernames for existing registrations. Runs as a plain Node process outside Cloudflare Workers, so it isn't subject to Workers' subrequest/CPU limits.
+
+### Bug Fixes
+
+- **Fixed publicID-based team win matching** — The game-info API's per-player identifier is `publicID`, not `persistentID` as it had been modeled. Reading the wrong key meant it always came back empty, so the publicID-based clan win mentions and stats introduced in v2.0.0 were silently falling back to username matching for every team win. Now reads the correct field.
+- **Fixed a crash in `/info player`** — The Player API response no longer includes the `games` array or `user` field the command depended on for its "Recent Games" section; removed that dependency instead of erroring.
+
+---
+
 ## v2.0.0
 
 ### Breaking Changes
