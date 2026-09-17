@@ -23,6 +23,19 @@ import {
 } from "../util/db";
 
 const PLAYER_ID_REGEX = /^[a-zA-Z0-9]{8}$/;
+const PROFILE_URL_PLAYER_ID_REGEX = /publicID=([a-zA-Z0-9]{8})/;
+
+function extractPlayerId(input: string): string | undefined {
+  const trimmed = input.trim();
+
+  if (PLAYER_ID_REGEX.test(trimmed)) {
+    return trimmed;
+  }
+
+  const match = trimmed.match(PROFILE_URL_PLAYER_ID_REGEX);
+
+  return match ? match[1] : undefined;
+}
 
 function hasManageGuild(
   interaction: APIChatInputApplicationCommandInteraction,
@@ -81,12 +94,12 @@ export async function executePlayerCommand(
     const playerIdOption = subcommand.options?.find(
       (o) => o.name === "player_id",
     );
-    const playerId =
+    const rawPlayerId =
       playerIdOption && "value" in playerIdOption
         ? String(playerIdOption.value).trim()
         : undefined;
 
-    if (!playerId) {
+    if (!rawPlayerId) {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
@@ -96,12 +109,14 @@ export async function executePlayerCommand(
       };
     }
 
-    if (!PLAYER_ID_REGEX.test(playerId)) {
+    const playerId = extractPlayerId(rawPlayerId);
+
+    if (!playerId) {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
           content:
-            "Invalid Player ID format. Your Player ID is an 8-character alphanumeric code. Make sure you're not using your in-game name. You can find your Player ID in the account modal in-game.",
+            "Invalid Player ID format. Your Player ID is an 8-character alphanumeric code, or you can paste your full profile URL from the account modal in-game. Make sure you're not using your in-game name.",
           flags: MessageFlags.Ephemeral,
         },
       };
@@ -258,7 +273,8 @@ const command: CommandHandler = {
           {
             type: ApplicationCommandOptionType.String,
             name: "player_id",
-            description: "Your OpenFront Player ID",
+            description:
+              "Your OpenFront Player ID, or your full profile URL from the account modal",
             required: true,
           },
           {

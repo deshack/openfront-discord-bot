@@ -46,7 +46,7 @@ const command: CommandHandler = {
               {
                 name: "Personal Tracking",
                 value: [
-                  "`/player register <player_id>` — Register your Player ID for FFA & team win announcements",
+                  "`/player register <player_id>` — Register your Player ID (or profile URL) for FFA & team win announcements",
                   "`/player unregister` — Stop win announcements",
                   "`/player status` — Check your registration status",
                   "`/ffa` — *(Deprecated, use `/player` instead)*",
