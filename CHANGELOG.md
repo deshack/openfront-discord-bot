@@ -19,6 +19,58 @@
 
 ---
 
+## v1.14.0
+
+### New Features
+
+- **2v2 ranked win support** — Ranked Team-mode wins (previously filtered out along with all Team-mode games) now post, with a dedicated two-a-side winners/opponents layout for 2v2 and an independent dedupe key per registered teammate.
+
+### Improvements
+
+- **`/trigger-wins` scoped by date range and clan tag** — Replaced the capped days option with an explicit start date (matching `/scan-wins`) and an optional single-clan-tag filter.
+- **24-hour API window batching** — Multi-day win scans now split into 24h windows to respect the OpenFront API's one-day max range per request.
+- **Configurable OpenFront API headers** — User-Agent and a custom header are now sourced from Cloudflare secrets and only sent when configured, with consistent error logging on non-200 API responses.
+
+### Bug Fixes
+
+- **Fixed `env.DATA` being undefined** — A `wrangler.toml` section-ordering bug (`kv_namespaces` was being parsed under `[vars]`) crashed any code that touched the DATA KV namespace.
+
+---
+
+## v1.13.0
+
+### Bug Fixes
+
+- **Map thumbnails restored** — Switched from OpenFront's asset manifest (blocked by Cloudflare Bot Fight Mode) to GitHub raw content URLs, pinned to the game's commit SHA.
+
+---
+
+## v1.12.0
+
+### Improvements
+
+- **Map thumbnail URLs updated for CDN-hosted assets** — OpenFront moved static assets to content-hashed paths served via ofcdn.dev; thumbnails were resolved from a fetched asset manifest at runtime. *(Superseded in v1.13.0 after Cloudflare Bot Fight Mode started blocking the manifest fetch.)*
+- Increased the max queue messages processed per run.
+
+---
+
+## v1.11.0
+
+### New Features
+
+- **"Delete Game Record" context menu command** — Right-click a game win message → Apps → Delete Game Record to clear the KV posted markers, delete the DB ranking rows, and remove the Discord message. Owner only.
+
+### Improvements
+
+- **`/scan-wins` restricted to the bot owner** — Removed the Manage Server/premium gate in favor of an owner-only runtime check, matching `/trigger-wins`.
+- **Fixed scan job subrequest limits** — Moved clan-session and player-session fetches into queue consumers (`scan-wins-queue`) and switched to batched DB inserts, keeping scans within Cloudflare's 50-subrequest limit.
+
+### Bug Fixes
+
+- **Skip posting on game info API failures** — Games are now left unposted for retry (with the error logged) instead of posting with "Unknown" map data or a minimal fallback message.
+
+---
+
 ## v1.10.1
 
 ### Bug Fixes
