@@ -8,16 +8,30 @@ import {
   InteractionContextType,
   InteractionResponseType,
   MessageFlags,
+  PermissionFlagsBits,
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
 import { Env } from "../types/env";
+import { getPlayerPublic } from "../util/api_util";
 import {
   getPlayerRegistration,
+  listPlayerRegistrationsByGuild,
   registerPlayer,
+  setProfileUsername,
   unregisterPlayer,
 } from "../util/db";
 
 const PLAYER_ID_REGEX = /^[a-zA-Z0-9]{8}$/;
+
+function hasManageGuild(
+  interaction: APIChatInputApplicationCommandInteraction,
+): boolean {
+  return (
+    (BigInt(interaction.member?.permissions ?? "0") &
+      PermissionFlagsBits.ManageGuild) !==
+    0n
+  );
+}
 
 export async function executePlayerCommand(
   interaction: APIApplicationCommandInteraction,
@@ -106,6 +120,15 @@ export async function executePlayerCommand(
 
     await registerPlayer(env.DB, guildId, channelId, discordUserId, playerId);
 
+    try {
+      const profile = await getPlayerPublic(playerId, env);
+      if (profile?.player.username) {
+        await setProfileUsername(env.DB, playerId, profile.player.username);
+      }
+    } catch (error) {
+      console.error(`Failed to fetch profile username for ${playerId}:`, error);
+    }
+
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
       data: {
@@ -163,6 +186,50 @@ export async function executePlayerCommand(
     };
   }
 
+  if (subcommand.name === "list") {
+    if (!hasManageGuild(chatInteraction)) {
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content:
+            "You need the Manage Server permission to use this command.",
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
+
+    const registrations = await listPlayerRegistrationsByGuild(env.DB, guildId);
+
+    if (registrations.length === 0) {
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content:
+            "No players registered. Use `/player register <player_id>` to add one.",
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
+
+    const lines = registrations.map((r) => {
+      const username = r.profileUsername ?? r.lastSeenUsername ?? "(unknown)";
+      return `**${username}** — \`${r.playerId}\` — <@${r.discordUserId}>`;
+    });
+
+    return {
+      type: InteractionResponseType.ChannelMessageWithSource,
+      data: {
+        embeds: [
+          {
+            title: "Registered Players",
+            description: lines.join("\n"),
+          },
+        ],
+        flags: MessageFlags.Ephemeral,
+      },
+    };
+  }
+
   return {
     type: InteractionResponseType.ChannelMessageWithSource,
     data: {
@@ -203,6 +270,12 @@ const command: CommandHandler = {
         type: ApplicationCommandOptionType.Subcommand,
         name: "status",
         description: "Check your registration status",
+      },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: "list",
+        description:
+          "List all players registered in this server (admin only)",
       },
     ],
   },

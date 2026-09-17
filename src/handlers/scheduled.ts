@@ -24,6 +24,7 @@ import {
   ScanJobClanSession,
   ScanJobFFAGame,
   ScanJobPlayer,
+  updateLastSeenUsername,
 } from "../util/db";
 import { sendChannelMessage } from "../util/discord";
 import { recordPlayerWin } from "../util/stats";
@@ -112,8 +113,12 @@ async function handleClanSessionJob(
       GameMode.Team,
       session.score,
       gameInfoData!.data.info.start.toISOString(),
-      player.persistentID,
+      player.publicID,
     );
+
+    if (player.publicID) {
+      await updateLastSeenUsername(env.DB, player.publicID, player.username);
+    }
   }
 
   await completeClanSessionJob(env.DB, job.id, session.gameId);
@@ -293,8 +298,16 @@ async function processFFAGame(
       GameMode.FFA,
       0,
       gameInfo.start.toISOString(),
-      winnerPlayer.persistentID,
+      winnerPlayer.publicID,
     );
+
+    if (winnerPlayer.publicID) {
+      await updateLastSeenUsername(
+        env.DB,
+        winnerPlayer.publicID,
+        winnerPlayer.username,
+      );
+    }
 
     console.debug(
       `Recorded FFA win for ${winnerPlayer.username} in game ${game.gameId}`,

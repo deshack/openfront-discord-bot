@@ -4,9 +4,6 @@ import { GameDifficulty, GameMode } from "../util/api_schemas";
 import { Env } from "../types/env";
 import { getPlayerPublic } from "../util/api_util";
 import { dateToDiscordTimestamp, TimestampStyles } from "../util/date_format";
-import { ofStatsReplayUrl, replayUrl } from "../util/openfront";
-
-const RECENT_GAMES_LEN = 5;
 
 export async function getPlayerPublicMessage(
   publicId: string,
@@ -16,22 +13,6 @@ export async function getPlayerPublicMessage(
   if (playerPublic === undefined) {
     return undefined;
   }
-
-  const recentGames = playerPublic.player.games
-    .sort((a, b) => b.start.getTime() - a.start.getTime())
-    .filter((_value, index) => index < RECENT_GAMES_LEN);
-
-  let recentGamesStr = "";
-  recentGames.forEach((game) => {
-    recentGamesStr += dedent`
-        \n**${game.gameId}** ${dateToDiscordTimestamp(
-          game.start,
-          TimestampStyles.RelativeTime,
-        )}
-            ${game.mode} - ${game.difficulty} - ${game.map} - ${game.type}
-            [Watch replay](${replayUrl(game.gameId)}) | [Replay on OFStats](${ofStatsReplayUrl(game.gameId)})
-        `;
-  });
 
   let statisticsStr = "";
   if (playerPublic.player.stats.Public !== undefined) {
@@ -69,6 +50,7 @@ export async function getPlayerPublicMessage(
 
   const str = dedent`
         **PublicID**: ||\`${publicId}\`||
+        **Username**: ${playerPublic.player.username ?? "*(Not set)*"}
         **Created**: ${
           playerPublic.player.createdAt === undefined
             ? "*(No data)*"
@@ -77,9 +59,6 @@ export async function getPlayerPublicMessage(
                 TimestampStyles.RelativeTime,
               )
         }
-
-        **__Recent Games__**
-        ${recentGamesStr}
 
         **__Statistics__**
         ${statisticsStr}

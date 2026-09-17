@@ -321,6 +321,8 @@ export interface PlayerRegistration {
   channelId: string;
   discordUserId: string;
   playerId: string;
+  profileUsername?: string | null;
+  lastSeenUsername?: string | null;
 }
 
 interface PlayerRegistrationRow {
@@ -330,6 +332,8 @@ interface PlayerRegistrationRow {
   discord_user_id: string;
   player_id: string;
   created_at: number;
+  profile_username: string | null;
+  last_seen_username: string | null;
 }
 
 export async function registerPlayer(
@@ -389,6 +393,32 @@ export async function getPlayerRegistration(
   };
 }
 
+export async function setProfileUsername(
+  db: D1Database,
+  playerId: string,
+  username: string | null,
+): Promise<void> {
+  await db
+    .prepare(
+      "UPDATE player_registrations SET profile_username = ? WHERE player_id = ?",
+    )
+    .bind(username, playerId)
+    .run();
+}
+
+export async function updateLastSeenUsername(
+  db: D1Database,
+  playerId: string,
+  username: string,
+): Promise<void> {
+  await db
+    .prepare(
+      "UPDATE player_registrations SET last_seen_username = ? WHERE player_id = ?",
+    )
+    .bind(username, playerId)
+    .run();
+}
+
 export async function getPlayerRegistrationsByPlayerIds(
   db: D1Database,
   guildId: string,
@@ -421,7 +451,7 @@ export async function listPlayerRegistrationsByGuild(
 ): Promise<PlayerRegistration[]> {
   const { results } = await db
     .prepare(
-      "SELECT channel_id, discord_user_id, player_id FROM player_registrations WHERE guild_id = ?",
+      "SELECT channel_id, discord_user_id, player_id, profile_username, last_seen_username FROM player_registrations WHERE guild_id = ? ORDER BY created_at ASC",
     )
     .bind(guildId)
     .all<PlayerRegistrationRow>();
@@ -430,6 +460,8 @@ export async function listPlayerRegistrationsByGuild(
     channelId: row.channel_id,
     discordUserId: row.discord_user_id,
     playerId: row.player_id,
+    profileUsername: row.profile_username,
+    lastSeenUsername: row.last_seen_username,
   }));
 }
 

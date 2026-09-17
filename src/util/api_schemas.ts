@@ -72,27 +72,6 @@ export enum GameMode {
   Team = "Team",
 }
 
-export type MapName = string;
-
-export interface GameSchemaRaw {
-  gameId: string;
-  start: string;
-  mode: GameMode;
-  type: GameType;
-  map: MapName;
-  difficulty: GameDifficulty;
-  clientId: string;
-}
-type GameSchema = Replace<GameSchemaRaw, { start: Date }>;
-
-export interface DiscordUserSchema {
-  id: string;
-  username: string;
-  discriminator: string;
-  global_name: string | null;
-  avatar: string | null;
-}
-
 type PlayerStats =
   | {
       attacks?: bigint[] | undefined;
@@ -160,37 +139,21 @@ type LayeredStats = Partial<
 >;
 
 export interface PlayerPublicRaw {
+  publicId: string;
   createdAt: string | null;
-  user?: DiscordUserSchema;
-  games: GameSchemaRaw[];
+  username?: string | null;
   stats: LayeredStatsRaw;
 }
-export type PlayerPublic = Replace<
-  PlayerPublicRaw,
-  { createdAt?: Date; games: GameSchema[]; stats: LayeredStats }
->;
+export type PlayerPublic = Replace<PlayerPublicRaw, { createdAt?: Date; stats: LayeredStats }>;
 
 export function playerPublicRawToPlayerPublic(
   raw: PlayerPublicRaw,
 ): PlayerPublic {
-  const notRaw: PlayerPublic = {
-    createdAt: raw.createdAt === null ? undefined : new Date(raw.createdAt),
-    user: raw.user,
-    games: raw.games.map((game) => gameSchemaRawToGameSchema(game)),
-    stats: layeredStatsRawToLayeredStats(raw.stats),
-  };
-  return notRaw;
-}
-
-function gameSchemaRawToGameSchema(raw: GameSchemaRaw): GameSchema {
   return {
-    gameId: raw.gameId,
-    start: new Date(raw.start),
-    mode: raw.mode,
-    type: raw.type,
-    map: raw.map,
-    difficulty: raw.difficulty,
-    clientId: raw.clientId,
+    publicId: raw.publicId,
+    createdAt: raw.createdAt === null ? undefined : new Date(raw.createdAt),
+    username: raw.username && raw.username.trim().length > 0 ? raw.username : undefined,
+    stats: layeredStatsRawToLayeredStats(raw.stats),
   };
 }
 
@@ -252,7 +215,7 @@ export interface GamePlayerStatsRaw {
 export interface GamePlayerRaw {
   clientID: string;
   username: string;
-  persistentID: string | null;
+  publicID: string | null;
   clanTag: string | null;
   cosmetics: GamePlayerCosmetics;
   stats?: GamePlayerStatsRaw;
@@ -312,7 +275,7 @@ export interface GameInfoResponseRaw {
 export interface GamePlayer {
   clientID: string;
   username: string;
-  persistentID?: string;
+  publicID?: string;
   clanTag?: string;
   cosmetics: GamePlayerCosmetics;
   stats?: GamePlayerStatsRaw;
@@ -354,7 +317,7 @@ export function gameInfoResponseRawToGameInfoResponse(
       players: raw.info.players.map((player) => ({
         clientID: player.clientID,
         username: player.username,
-        persistentID: player.persistentID ?? undefined,
+        publicID: player.publicID ?? undefined,
         clanTag: player.clanTag ?? undefined,
         cosmetics: player.cosmetics,
         stats: player.stats,

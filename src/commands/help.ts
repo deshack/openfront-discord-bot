@@ -61,6 +61,7 @@ const command: CommandHandler = {
                   "`/setup ranked-channel` — Set channel for ranked win announcements",
                   "`/setup disable` — Disable win announcements",
                   "`/setup status` — View current bot configuration",
+                  "`/player list` — List all registered players (username, Player ID, Discord user)",
                   "`/in-game-name remove <username>` — Remove a legacy name mapping (admin)",
                   "`/in-game-name list` — List legacy name mappings *(Deprecated, win mentions now use `/player`)*",
                 ].join("\n"),

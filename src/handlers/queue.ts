@@ -21,6 +21,7 @@ import {
   getUsernameMappingsByUsernames,
   stripClanTag,
   unregisterPlayer,
+  updateLastSeenUsername,
 } from "../util/db";
 import { sendChannelMessage } from "../util/discord";
 import {
@@ -139,7 +140,7 @@ async function processClanTag(
           )
           .map((player) => ({
             username: player.username,
-            publicId: player.persistentID,
+            publicId: player.publicID,
           }));
         const map = gameInfoData.data.info.config.gameMap;
         const duration = gameInfoData.data.info.duration;
@@ -183,6 +184,12 @@ async function processClanTag(
 
         if (result.success) {
           await markGamePosted(env.DATA, guildId, win.gameId);
+
+          for (const { username, publicId } of clanPlayers) {
+            if (publicId) {
+              await updateLastSeenUsername(env.DB, publicId, username);
+            }
+          }
 
           const premiumStatus =
             premiumCache.get(guildId) ??
@@ -345,6 +352,13 @@ async function processPlayer(
             await markFFAGamePosted(env.DATA, guildId, playerId, win.gameId);
           }
 
+          const selfPlayer = gameInfo.players.find(
+            (p) => p.clientID === win.clientId,
+          );
+          if (selfPlayer) {
+            await updateLastSeenUsername(env.DB, playerId, selfPlayer.username);
+          }
+
           const isNotRanked = gameInfo.config.rankedType === undefined;
           const winner = gameInfo.winner;
 
@@ -386,7 +400,7 @@ async function processPlayer(
                   GameMode.FFA,
                   0,
                   gameInfo.start.toISOString(),
-                  winnerPlayer.persistentID,
+                  winnerPlayer.publicID,
                 );
               }
             }
