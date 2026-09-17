@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.1.1
+
+### Bug Fixes
+
+- **Auto-remove registrations for deleted/invalid Player IDs** — A 404 from the player-sessions API means the Player ID is invalid or the account was deleted, not a transient failure. Previously this was retried forever; now the win-check pipeline and the owner-only historical scan job both delete that player's registration(s) as soon as they see a 404, while other errors (rate limits, upstream 500s) still just skip and retry on the next run.
+
+---
+
 ## v2.1.0
 
 ### New Features
