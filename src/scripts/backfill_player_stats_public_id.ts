@@ -41,15 +41,12 @@ function queryD1<T>(sql: string): T[] {
   return parsed[0]?.results ?? [];
 }
 
-function applyD1File(path: string): number {
-  const output = execFileSync(
+function applyD1File(path: string): void {
+  execFileSync(
     "npx",
-    ["wrangler", "d1", "execute", "DB", "--remote", "--json", "--file", path],
-    { encoding: "utf-8" },
+    ["wrangler", "d1", "execute", "DB", "--remote", "--file", path],
+    { stdio: "inherit" },
   );
-
-  const parsed = JSON.parse(output) as D1QueryResult<unknown>[];
-  return parsed.reduce((sum, result) => sum + (result.meta?.changes ?? 0), 0);
 }
 
 function sqlEscape(value: string): string {
@@ -139,14 +136,24 @@ async function main() {
     return;
   }
 
+  const beforeCount = queryD1<{ null_public_id: number }>(
+    "SELECT COUNT(*) as null_public_id FROM player_stats WHERE public_id IS NULL",
+  )[0]?.null_public_id ?? 0;
+
   const filePath = join(tmpdir(), `backfill-player-stats-public-id-${Date.now()}.sql`);
   writeFileSync(filePath, statements.join("\n"), "utf-8");
 
   console.log("Applying updates to the remote database...");
-  const changes = applyD1File(filePath);
+  applyD1File(filePath);
   unlinkSync(filePath);
 
-  console.log(`Done. ${changes} player_stats row(s) merged into a public_id identity.`);
+  const afterCount = queryD1<{ null_public_id: number }>(
+    "SELECT COUNT(*) as null_public_id FROM player_stats WHERE public_id IS NULL",
+  )[0]?.null_public_id ?? 0;
+
+  console.log(
+    `Done. ${beforeCount - afterCount} player_stats row(s) merged into a public_id identity (${afterCount} still unmatched).`,
+  );
 }
 
 await main();
