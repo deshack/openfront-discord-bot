@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.4.3
+
+### Bug Fixes
+
+- **Fixed the leaderboard silently getting stuck on "thinking..."** — `/rank` and its buttons ran the leaderboard query, image render, and Discord follow-up entirely inside `ctx.waitUntil()`, which only gets a short grace period after the interaction response is sent. Under load that work could get killed mid-flight with no error, leaving the interaction stuck. That work now runs in a queue consumer (`rank-render-queue`) instead, which gets a full execution budget.
+- **Added missing indexes contributing to D1 CPU-limit errors** — `player_registrations(player_id)` (scanned in full on every FFA-queue player check, every 5 minutes) and an expression index matching the leaderboard's `COALESCE(public_id, username)` grouping (the all-time leaderboard query had no time filter and was scanning/sorting the entire `player_stats` table on every view).
+
+---
+
 ## v2.4.2
 
 ### Bug Fixes
