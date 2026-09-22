@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.4.4
+
+### Bug Fixes
+
+- **Fixed FFA wins never getting posted** — `getPlayerSessions()` assumed the OpenFront sessions API returns a bare array. It actually returns `{results, nextCursor}` (cursor-paginated), which always failed that assumption: previously this crashed the FFA queue outright (the `null` fix in v2.4.2 only patched one symptom of this), and after that fix it silently returned no sessions at all instead of crashing — so no FFA win was detected or posted, with no error logged. Now correctly unwraps `results` and follows `nextCursor`, the same pagination already used for clan sessions.
+
+---
+
 ## v2.4.3
 
 ### Bug Fixes
