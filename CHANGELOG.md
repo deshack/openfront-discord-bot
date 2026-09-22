@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.4.2
+
+### Bug Fixes
+
+- **Fixed a crash in the FFA wins queue when the sessions API returns `null`** — `getPlayerSessions()` assumed the OpenFront API always responds with an array; when it returns `null` for "no sessions in this window", the queue handler crashed calling `.filter()` on it, failing the entire batch of players and retrying forever. Now normalizes a non-array response to `[]`. `getClanSessions()` had the same assumption on its `results` field and got the same guard.
+
+---
+
 ## v2.4.1
 
 ### Bug Fixes
