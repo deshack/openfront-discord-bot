@@ -8,10 +8,6 @@ import { getRankMessage } from "../messages/rank";
 import { CommandContext } from "../structures/command";
 import { Env } from "../types/env";
 import {
-  patchOriginalResponse,
-  postFollowupResponse,
-} from "../util/discord-webhook";
-import {
   LeaderboardPeriod,
   MonthContext,
   RankingType,
@@ -118,37 +114,15 @@ export async function handleButton(
       };
     }
 
-    ctx.waitUntil(
-      (async () => {
-        try {
-          const result = await getRankMessage(
-            env.DB,
-            guildId,
-            period,
-            page,
-            monthContext,
-            rankingType,
-            weekContext,
-          );
-          await patchOriginalResponse(
-            env.DISCORD_CLIENT_ID,
-            interaction.token,
-            {
-              embeds: result.message.embeds,
-              components: result.message.components,
-              attachments: result.message.attachments,
-            },
-            result.files,
-          );
-        } catch (err) {
-          console.error("Rank refresh follow-up failed:", err);
-          await postFollowupResponse(env.DISCORD_CLIENT_ID, interaction.token, {
-            content: "There was an error while refreshing the leaderboard :(",
-            flags: MessageFlags.Ephemeral,
-          });
-        }
-      })(),
-    );
+    await env.RANK_RENDER_QUEUE.send({
+      guildId,
+      period,
+      page,
+      monthContext,
+      weekContext,
+      rankingType,
+      interactionToken: interaction.token,
+    });
 
     return { type: InteractionResponseType.DeferredMessageUpdate };
   }
@@ -207,38 +181,15 @@ export async function handleButton(
       };
     }
 
-    ctx.waitUntil(
-      (async () => {
-        try {
-          const result = await getRankMessage(
-            env.DB,
-            guildId,
-            period,
-            page,
-            monthContext,
-            rankingType,
-            weekContext,
-          );
-          await patchOriginalResponse(
-            env.DISCORD_CLIENT_ID,
-            interaction.token,
-            {
-              embeds: result.message.embeds,
-              components: result.message.components,
-              attachments: result.message.attachments,
-            },
-            result.files,
-          );
-        } catch (err) {
-          console.error("Rank pagination follow-up failed:", err);
-          await postFollowupResponse(env.DISCORD_CLIENT_ID, interaction.token, {
-            content:
-              "There was an error while fetching the leaderboard page :(",
-            flags: MessageFlags.Ephemeral,
-          });
-        }
-      })(),
-    );
+    await env.RANK_RENDER_QUEUE.send({
+      guildId,
+      period,
+      page,
+      monthContext,
+      weekContext,
+      rankingType,
+      interactionToken: interaction.token,
+    });
 
     return { type: InteractionResponseType.DeferredMessageUpdate };
   }

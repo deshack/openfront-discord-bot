@@ -1,3 +1,10 @@
+import type {
+  LeaderboardPeriod,
+  MonthContext,
+  RankingType,
+  WeekContext,
+} from "../util/stats";
+
 export type ClanWinsMessage = {
   clanTags: string[];
   start: string;
@@ -16,4 +23,14 @@ export type ScanWinsMessage = {
   clanTag: string;
   startDate: string;
   endDate: string;
+};
+
+export type RankRenderMessage = {
+  guildId: string;
+  period: LeaderboardPeriod;
+  page: number;
+  monthContext?: MonthContext;
+  weekContext?: WeekContext;
+  rankingType: RankingType;
+  interactionToken: string;
 };

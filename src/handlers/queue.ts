@@ -1,7 +1,13 @@
 import { getClanWinMessage } from "../messages/clan_win";
 import { getFFAWinMessage } from "../messages/ffa_win";
+import { getRankMessage } from "../messages/rank";
 import { Env } from "../types/env";
-import { ClanWinsMessage, FFAWinsMessage, ScanWinsMessage } from "../types/queue";
+import {
+  ClanWinsMessage,
+  FFAWinsMessage,
+  RankRenderMessage,
+  ScanWinsMessage,
+} from "../types/queue";
 import { GameMode, GameType } from "../util/api_schemas";
 import {
   getClanSessions,
@@ -25,6 +31,7 @@ import {
   updateLastSeenUsername,
 } from "../util/db";
 import { sendChannelMessage } from "../util/discord";
+import { patchOriginalResponse } from "../util/discord-webhook";
 import {
   isFFAGamePosted,
   isGamePosted,
@@ -474,6 +481,70 @@ export async function handleScanWinsQueue(
         error,
       );
       message.retry();
+    }
+  }
+}
+
+/**
+ * Renders and delivers a deferred /rank response. This runs as a queue
+ * consumer rather than inside ctx.waitUntil() from the interaction handler:
+ * waitUntil only gets a short grace period after the HTTP response is sent,
+ * and the leaderboard query + image render + Discord PATCH occasionally
+ * exceeded it under load, silently leaving the interaction stuck on
+ * "thinking...". A queue consumer gets a full execution budget instead.
+ */
+export async function handleRankRenderQueue(
+  batch: MessageBatch<RankRenderMessage>,
+  env: Env,
+): Promise<void> {
+  for (const message of batch.messages) {
+    const {
+      guildId,
+      period,
+      page,
+      monthContext,
+      weekContext,
+      rankingType,
+      interactionToken,
+    } = message.body;
+
+    try {
+      const result = await getRankMessage(
+        env.DB,
+        guildId,
+        period,
+        page,
+        monthContext,
+        rankingType,
+        weekContext,
+      );
+
+      await patchOriginalResponse(
+        env.DISCORD_CLIENT_ID,
+        interactionToken,
+        {
+          embeds: result.message.embeds,
+          components: result.message.components,
+          attachments: result.message.attachments,
+        },
+        result.files,
+      );
+
+      message.ack();
+    } catch (error) {
+      console.error(`Failed to render leaderboard:`, message.body, error);
+
+      try {
+        await patchOriginalResponse(env.DISCORD_CLIENT_ID, interactionToken, {
+          content: "There was an error while loading the leaderboard :(",
+          embeds: [],
+          components: [],
+        });
+      } catch (patchError) {
+        console.error("Failed to send leaderboard error message:", patchError);
+      }
+
+      message.ack();
     }
   }
 }

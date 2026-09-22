@@ -1,4 +1,9 @@
-import type { ClanWinsMessage, FFAWinsMessage, ScanWinsMessage } from "./queue";
+import type {
+  ClanWinsMessage,
+  FFAWinsMessage,
+  RankRenderMessage,
+  ScanWinsMessage,
+} from "./queue";
 
 export interface Env {
   DISCORD_TOKEN: string;
@@ -11,6 +16,7 @@ export interface Env {
   CLAN_WINS_QUEUE: Queue<ClanWinsMessage>;
   FFA_WINS_QUEUE: Queue<FFAWinsMessage>;
   SCAN_WINS_QUEUE: Queue<ScanWinsMessage>;
+  RANK_RENDER_QUEUE: Queue<RankRenderMessage>;
   OPENFRONT_USER_AGENT?: string;
   OPENFRONT_CUSTOM_HEADER_NAME?: string;
   OPENFRONT_CUSTOM_HEADER_VALUE?: string;

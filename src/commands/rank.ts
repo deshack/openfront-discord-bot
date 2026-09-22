@@ -11,7 +11,6 @@ import {
 } from "discord-api-types/v10";
 import { getRankMessage } from "../messages/rank";
 import { CommandHandler } from "../structures/command";
-import { patchOriginalResponse } from "../util/discord-webhook";
 import {
   getISOWeek,
   LeaderboardPeriod,
@@ -191,40 +190,15 @@ const command: CommandHandler = {
       };
     }
 
-    ctx.waitUntil(
-      (async () => {
-        try {
-          const result = await getRankMessage(
-            env.DB,
-            guildId,
-            period,
-            0,
-            monthContext,
-            rankingType,
-            weekContext,
-          );
-          await patchOriginalResponse(
-            env.DISCORD_CLIENT_ID,
-            interaction.token,
-            {
-              embeds: result.message.embeds,
-              components: result.message.components,
-              attachments: result.message.attachments,
-            },
-            result.files,
-          );
-        } catch (err) {
-          console.error("Rank follow-up failed:", err);
-          await patchOriginalResponse(
-            env.DISCORD_CLIENT_ID,
-            interaction.token,
-            {
-              content: "There was an error while fetching the leaderboard :(",
-            },
-          );
-        }
-      })(),
-    );
+    await env.RANK_RENDER_QUEUE.send({
+      guildId,
+      period,
+      page: 0,
+      monthContext,
+      weekContext,
+      rankingType,
+      interactionToken: interaction.token,
+    });
 
     return { type: InteractionResponseType.DeferredChannelMessageWithSource };
   },
