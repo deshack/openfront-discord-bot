@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.4.1
+
+### Bug Fixes
+
+- **Fixed the premium leaderboard undercounting legacy wins** — The one-time backfill from v2.0.0 only merged pre-`public_id` `player_stats` rows into a player's registered identity via the deprecated `username_mappings` table, so anyone who registered without ever setting a username mapping had their old and new wins split across two identities and undercounted. A new migration re-runs the merge using the profile/last-seen usernames tracked since v2.1.0, and `/player register` now re-runs the same merge for that user so future registrations self-heal immediately.
+
+---
+
 ## v2.4.0
 
 ### Improvements
