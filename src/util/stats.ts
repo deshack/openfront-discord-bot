@@ -149,6 +149,46 @@ export async function recordPlayerWin(
     .run();
 }
 
+/**
+ * Merges legacy player_stats rows (recorded before the public_id column
+ * existed, or before this player had registered) into a player's public_id
+ * identity, matching on any username we now know is theirs: their cached
+ * profile username, their last-seen in-game username, or a legacy
+ * username_mappings entry. Without this, wins recorded under the bare
+ * username never join the player's public_id-keyed total on the premium
+ * leaderboard. Safe to call on every /player register.
+ */
+export async function backfillPlayerStatsPublicId(
+  db: D1Database,
+  guildId: string,
+  discordUserId: string,
+): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE player_stats
+       SET public_id = (
+         SELECT pr.player_id
+         FROM player_registrations pr
+         WHERE pr.guild_id = player_stats.guild_id
+           AND pr.discord_user_id = ?
+           AND (
+             LOWER(pr.profile_username) = LOWER(player_stats.username)
+             OR LOWER(pr.last_seen_username) = LOWER(player_stats.username)
+             OR EXISTS (
+               SELECT 1 FROM username_mappings um
+               WHERE um.guild_id = pr.guild_id
+                 AND um.discord_user_id = pr.discord_user_id
+                 AND LOWER(um.username) = LOWER(player_stats.username)
+             )
+           )
+       )
+       WHERE guild_id = ?
+         AND public_id IS NULL`,
+    )
+    .bind(discordUserId, guildId)
+    .run();
+}
+
 export async function deletePlayerWinsByGame(
   db: D1Database,
   guildId: string,

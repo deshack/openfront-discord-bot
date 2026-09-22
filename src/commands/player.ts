@@ -21,6 +21,7 @@ import {
   setProfileUsername,
   unregisterPlayer,
 } from "../util/db";
+import { backfillPlayerStatsPublicId } from "../util/stats";
 
 const PLAYER_ID_REGEX = /^[a-zA-Z0-9]{8}$/;
 const PROFILE_URL_PLAYER_ID_REGEX = /publicID=([a-zA-Z0-9]{8})/;
@@ -170,6 +171,15 @@ export async function executePlayerCommand(
       }
     } catch (error) {
       console.error(`Failed to fetch profile username for ${playerId}:`, error);
+    }
+
+    try {
+      await backfillPlayerStatsPublicId(env.DB, guildId, targetDiscordUserId);
+    } catch (error) {
+      console.error(
+        `Failed to backfill player_stats public_id for ${targetDiscordUserId}:`,
+        error,
+      );
     }
 
     return {
