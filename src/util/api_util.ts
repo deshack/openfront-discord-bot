@@ -9,6 +9,7 @@ import {
   PlayerPublicRaw,
   playerPublicRawToPlayerPublic,
   PlayerSession,
+  PlayerSessionsApiResponse,
 } from "./api_schemas";
 import { Env } from "../types/env";
 
@@ -160,24 +161,38 @@ export async function getPlayerSessions(
   end: string,
   env: Env,
 ): Promise<ApiResponse<PlayerSession[]> | "not_found" | undefined> {
-  const url = `${API_PLAYER_SESSIONS_PATH}${encodeURIComponent(playerId)}/sessions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
-  const res = await apiFetch(url, env);
+  const allSessions: PlayerSession[] = [];
+  let cursor: string | undefined;
 
-  if (res.status === 404) {
-    console.warn(`Player sessions not found for ${playerId} (HTTP 404) — Player ID is likely invalid or the account was deleted.`);
-    return "not_found";
+  while (true) {
+    const url =
+      `${API_PLAYER_SESSIONS_PATH}${encodeURIComponent(playerId)}/sessions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}` +
+      (cursor ? `&cursor=${encodeURIComponent(cursor)}` : "");
+    const res = await apiFetch(url, env);
+
+    if (res.status === 404) {
+      console.warn(`Player sessions not found for ${playerId} (HTTP 404) — Player ID is likely invalid or the account was deleted.`);
+      return "not_found";
+    }
+
+    if (res.status !== 200) {
+      const body = await res.text().catch(() => "(unreadable)");
+      console.error(`Failed to fetch player sessions for ${playerId}: HTTP ${res.status} - ${body}`);
+      return undefined;
+    }
+
+    const json = (await res.json()) as PlayerSessionsApiResponse;
+    const results = Array.isArray(json?.results) ? json.results : [];
+    allSessions.push(...results);
+
+    if (!json?.nextCursor) {
+      break;
+    }
+    cursor = json.nextCursor;
   }
-
-  if (res.status !== 200) {
-    const body = await res.text().catch(() => "(unreadable)");
-    console.error(`Failed to fetch player sessions for ${playerId}: HTTP ${res.status} - ${body}`);
-    return undefined;
-  }
-
-  const json = (await res.json()) as PlayerSession[] | null;
 
   return {
-    data: Array.isArray(json) ? json : [],
+    data: allSessions,
     fetchedAt: Date.now(),
   };
 }

@@ -54,6 +54,11 @@ export interface PlayerSession {
   hasWon: boolean;
 }
 
+export interface PlayerSessionsApiResponse {
+  results: PlayerSession[];
+  nextCursor: string | null;
+}
+
 export enum GameDifficulty {
   Easy = "Easy",
   Medium = "Medium",
