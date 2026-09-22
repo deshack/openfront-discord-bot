@@ -107,9 +107,10 @@ export async function getClanSessions(
     }
 
     const json = (await res.json()) as ClanSessionsApiResponse;
-    allSessions.push(...json.results);
+    const results = Array.isArray(json.results) ? json.results : [];
+    allSessions.push(...results);
 
-    if (allSessions.length >= json.total || json.results.length < SESSIONS_PAGE_LIMIT) {
+    if (allSessions.length >= json.total || results.length < SESSIONS_PAGE_LIMIT) {
       break;
     }
 
@@ -173,10 +174,10 @@ export async function getPlayerSessions(
     return undefined;
   }
 
-  const json = (await res.json()) as PlayerSession[];
+  const json = (await res.json()) as PlayerSession[] | null;
 
   return {
-    data: json,
+    data: Array.isArray(json) ? json : [],
     fetchedAt: Date.now(),
   };
 }
