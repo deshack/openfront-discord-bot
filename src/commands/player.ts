@@ -191,6 +191,48 @@ export async function executePlayerCommand(
   }
 
   if (subcommand.name === "unregister") {
+    const userOption = subcommand.options?.find((o) => o.name === "user") as
+      | APIApplicationCommandInteractionDataUserOption
+      | undefined;
+
+    if (userOption) {
+      if (!hasManageGuild(chatInteraction)) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content:
+              "You need the Manage Server permission to remove another user's registration.",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
+      const targetDiscordUserId = String(userOption.value);
+      const removed = await unregisterPlayer(
+        env.DB,
+        guildId,
+        targetDiscordUserId,
+      );
+
+      if (!removed) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: `<@${targetDiscordUserId}> is not registered for win tracking in this server.`,
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: `Removed <@${targetDiscordUserId}>'s registration. Their wins will no longer be announced.`,
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
+
     const removed = await unregisterPlayer(env.DB, guildId, discordUserId);
 
     if (!removed) {
@@ -300,6 +342,15 @@ const command: CommandHandler = {
         type: ApplicationCommandOptionType.Subcommand,
         name: "unregister",
         description: "Stop win announcements",
+        options: [
+          {
+            type: ApplicationCommandOptionType.User,
+            name: "user",
+            description:
+              "The Discord user to unregister (admin only — omit to unregister yourself)",
+            required: false,
+          },
+        ],
       },
       {
         type: ApplicationCommandOptionType.Subcommand,

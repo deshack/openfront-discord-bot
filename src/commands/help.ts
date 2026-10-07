@@ -63,6 +63,7 @@ const command: CommandHandler = {
                   "`/setup disable` — Disable win announcements",
                   "`/setup status` — View current bot configuration",
                   "`/player register <player_id> <user>` — Register another user's Player ID (admin)",
+                  "`/player unregister <user>` — Remove another user's Player ID registration (admin)",
                   "`/player list` — List all registered players (username, Player ID, Discord user)",
                   "`/in-game-name remove <username>` — Remove a legacy name mapping (admin)",
                   "`/in-game-name list` — List legacy name mappings *(Deprecated, win mentions now use `/player`)*",
