@@ -25,17 +25,24 @@ export function getClanWinMessage(
 ): MessageData {
   const gameStart = new Date(session.gameStart);
 
-  const formattedPlayers = clanPlayers.map(({ username, publicId }) => {
-    const discordUserId =
+  const resolvedPlayers = clanPlayers.map(({ username, publicId }) => ({
+    username,
+    discordUserId:
       (publicId && publicIdMappings?.get(publicId)) ??
-      usernameMappings?.get(stripClanTag(username).toLowerCase());
+      usernameMappings?.get(stripClanTag(username).toLowerCase()),
+  }));
 
-    if (discordUserId) {
-      return `${username} (<@${discordUserId}>)`;
-    }
+  const formattedPlayers = resolvedPlayers.map(({ username, discordUserId }) =>
+    discordUserId ? `${username} (<@${discordUserId}>)` : username,
+  );
 
-    return username;
-  });
+  const mentions = [
+    ...new Set(
+      resolvedPlayers
+        .map(({ discordUserId }) => discordUserId)
+        .filter((id): id is string => !!id),
+    ),
+  ].map((id) => `<@${id}>`);
 
   const playersLine =
     formattedPlayers.length > 0
@@ -62,6 +69,7 @@ export function getClanWinMessage(
   console.debug(`Map thumbnail URL for ${map}: ${mapThumbnailUrl}`);
 
   return {
+    ...(mentions.length > 0 && { content: mentions.join(" ") }),
     embeds: [
       {
         title: `[${session.clanTag}] Victory!`,

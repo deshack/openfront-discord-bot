@@ -6,7 +6,12 @@ import {
   formatDuration,
   TimestampStyles,
 } from "../util/date_format";
-import { gameUrl, mapUrl, ofStatsReplayUrl, replayUrl } from "../util/openfront";
+import {
+  gameUrl,
+  mapUrl,
+  ofStatsReplayUrl,
+  replayUrl,
+} from "../util/openfront";
 
 export interface FFAWinData {
   discordUserId: string;
@@ -14,10 +19,18 @@ export interface FFAWinData {
   gameId: string;
   gameInfo?: GameInfo;
   gitCommit?: string;
+  publicIdMappings?: Map<string, string>;
 }
 
 export function getFFAWinMessage(data: FFAWinData): MessageData {
-  const { discordUserId, clientId, gameId, gameInfo, gitCommit } = data;
+  const {
+    discordUserId,
+    clientId,
+    gameId,
+    gameInfo,
+    gitCommit,
+    publicIdMappings,
+  } = data;
 
   if (!gameInfo) {
     return {
@@ -43,29 +56,46 @@ export function getFFAWinMessage(data: FFAWinData): MessageData {
   const usernameFor = (id: string): string =>
     gameInfo.players.find((p) => p.clientID === id)?.username ?? "Unknown";
 
-  const desc =
-    gameInfo.winner?.type === "team" && gameInfo.config.rankedType === "2v2"
-      ? get2v2Description(
-          gameInfo,
-          gameId,
-          discordUserId,
-          clientId,
-          map,
-          duration,
-          startedAt,
-          usernameFor,
-        )
-      : getGenericDescription(
-          gameInfo,
-          gameId,
-          discordUserId,
-          map,
-          duration,
-          startedAt,
-          usernameFor,
-        );
+  const discordUserIdFor = (id: string): string | undefined => {
+    if (id === clientId) {
+      return discordUserId;
+    }
+
+    const publicId = gameInfo.players.find((p) => p.clientID === id)?.publicID;
+
+    return publicId ? publicIdMappings?.get(publicId) : undefined;
+  };
+
+  const is2v2 =
+    gameInfo.winner?.type === "team" && gameInfo.config.rankedType === "2v2";
+  const mentionedUserIds = is2v2
+    ? getWinningClientIds(gameInfo)
+        .map(discordUserIdFor)
+        .filter((id): id is string => id !== undefined)
+    : [discordUserId];
+
+  const desc = is2v2
+    ? get2v2Description(
+        gameInfo,
+        gameId,
+        discordUserIdFor,
+        map,
+        duration,
+        startedAt,
+        usernameFor,
+      )
+    : getGenericDescription(
+        gameInfo,
+        gameId,
+        discordUserId,
+        map,
+        duration,
+        startedAt,
+        usernameFor,
+      );
 
   return {
+    content: [...new Set(mentionedUserIds)].map((id) => `<@${id}>`).join(" "),
     embeds: [
       {
         title,
@@ -81,24 +111,28 @@ export function getFFAWinMessage(data: FFAWinData): MessageData {
   };
 }
 
+function getWinningClientIds(gameInfo: GameInfo): string[] {
+  return gameInfo.winner?.type === "team" ? gameInfo.winner.clientIds : [];
+}
+
 function get2v2Description(
   gameInfo: GameInfo,
   gameId: string,
-  discordUserId: string,
-  clientId: string,
+  discordUserIdFor: (id: string) => string | undefined,
   map: string,
   duration: string,
   startedAt: string,
   usernameFor: (id: string) => string,
 ): string {
-  const winningIds =
-    gameInfo.winner?.type === "team" ? gameInfo.winner.clientIds : [];
+  const winningIds = getWinningClientIds(gameInfo);
 
-  const winners = winningIds.map((id) =>
-    id === clientId
-      ? `${usernameFor(id)} (<@${discordUserId}>)`
-      : usernameFor(id),
-  );
+  const winners = winningIds.map((id) => {
+    const winnerDiscordUserId = discordUserIdFor(id);
+
+    return winnerDiscordUserId
+      ? `${usernameFor(id)} (<@${winnerDiscordUserId}>)`
+      : usernameFor(id);
+  });
   const opponents = gameInfo.players
     .filter((p) => !winningIds.includes(p.clientID))
     .map((p) => p.username);

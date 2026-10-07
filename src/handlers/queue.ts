@@ -332,12 +332,25 @@ async function processPlayer(
         const targetChannelId =
           guildChannelConfigCache.get(guildId)?.get(winType) ?? channelId;
 
+        const winningClientIds =
+          gameInfo.winner?.type === "team" ? gameInfo.winner.clientIds : [];
+        const winningPublicIds = gameInfo.players
+          .filter((p) => winningClientIds.includes(p.clientID))
+          .map((p) => p.publicID)
+          .filter((id): id is string => id !== undefined);
+        const publicIdMappings = await getPlayerRegistrationsByPlayerIds(
+          env.DB,
+          guildId,
+          winningPublicIds,
+        );
+
         const discordMessage = getFFAWinMessage({
           discordUserId,
           clientId: win.clientId,
           gameId: win.gameId,
           gameInfo,
           gitCommit: gameInfoData.data.gitCommit,
+          publicIdMappings,
         });
         const result = await sendChannelMessage(
           env.DISCORD_TOKEN,
