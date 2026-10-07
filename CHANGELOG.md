@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.4.5
+
+### Bug Fixes
+
+- **Win announcements now actually ping players** — Discord doesn't notify users mentioned inside an embed, so win messages only showed mentions without pinging anyone. Clan, FFA and ranked win messages now also mention the participating Discord users in the message content, alongside the embed.
+- **2v2 wins now mention both teammates** — the teammate is resolved through the server's player registrations (by Player ID), so both registered winners are mentioned instead of only the player whose win was processed first.
+
+---
+
 ## v2.4.4
 
 ### Bug Fixes
