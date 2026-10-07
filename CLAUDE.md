@@ -26,7 +26,7 @@ npm run test:coverage    # Run tests with coverage report
 
 ### CloudFlare Workers Setup
 
-1. Set secrets: `wrangler secret put DISCORD_TOKEN`, `DISCORD_PUBLIC_KEY`, `DISCORD_CLIENT_ID`
+1. Set secrets: `wrangler secret put DISCORD_TOKEN`, `DISCORD_PUBLIC_KEY`, `DISCORD_CLIENT_ID`, `DISCORD_SKU_ID`, `OWNER_DISCORD_ID` (optional: `OPENFRONT_USER_AGENT`, `OPENFRONT_CUSTOM_HEADER_VALUE`)
 2. For local dev, copy `.dev.vars.example` to `.dev.vars` and fill in values
 
 ### Discord Setup

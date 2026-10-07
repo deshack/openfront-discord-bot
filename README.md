@@ -4,29 +4,19 @@ Discord bot that interacts with the OpenFront API, deployed as a CloudFlare Work
 
 ## Commands
 
-> Commands marked with :star: require a premium subscription.
+> Commands marked with :star: require a premium subscription. Commands marked with :shield: require the **Manage Server** permission.
 
-### `/ping`
+### Stats & Lookup
 
-Check if the bot is online.
-
-### `/leaderboard`
-
-View the top players or clans.
-
-| Option | Required | Description |
-|--------|----------|-------------|
-| `type` | Yes | Which leaderboard to show (`players` or `clans`) |
-
-### `/info player`
+#### `/info player`
 
 Look up a player's profile.
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `id` | Yes | The player's public ID |
+| `id` | Yes | The player's Player ID |
 
-### `/info clan`
+#### `/info clan`
 
 Look up a clan's profile.
 
@@ -34,86 +24,166 @@ Look up a clan's profile.
 |--------|----------|-------------|
 | `tag` | Yes | The clan tag |
 
-### `/rank` :star:
+#### `/game`
 
-View the clan leaderboard rankings for a given time period.
-
-| Option | Required | Description |
-|--------|----------|-------------|
-| `period` | No | Time period — `monthly` or `all_time` (default) |
-| `year` | No | Year to view (defaults to current year) |
-| `month` | No | Month to view, 1–12 (defaults to current month) |
-| `type` | No | Ranking method — `wins` (default) or `score` |
-
-### `/game`
-
-Get a shareable link to an OpenFront game. Works in servers and DMs.
+Get a shareable link to an OpenFront game.
 
 | Option | Required | Description |
 |--------|----------|-------------|
 | `game-id` | Yes | The Game ID |
 
-### `/ffa register`
+#### `/game-deaths`
 
-Register your Player ID so the bot announces your FFA wins in the current channel.
+List players who died in a game, ordered by elimination turn.
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `player_id` | Yes | Your OpenFront Player ID |
+| `game-id` | Yes | The Game ID |
 
-### `/ffa unregister`
+#### `/whois`
 
-Stop receiving FFA win announcements.
+Look up the Discord user for an in-game username or Player ID, or the Player ID and in-game names for a Discord user. Provide exactly one of the options.
 
-### `/ffa status`
+| Option | Required | Description |
+|--------|----------|-------------|
+| `username` | No | In-game username (checks Player ID registrations first, then legacy name mappings) |
+| `player_id` | No | OpenFront Player ID |
+| `user` | No | Discord user |
 
-Check your current FFA registration status.
+### Leaderboards
 
-### `/setup wins`
+#### `/rank` :star: :shield:
 
-Enable clan win announcements in the current channel. Requires **Manage Server** permission.
+View the clan leaderboard rankings for a given time period.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `period` | No | Time period — `weekly`, `monthly` or `all_time` |
+| `year` | No | Year to view (defaults to current year) |
+| `month` | No | Month to view, 1–12 (defaults to current month) |
+| `week` | No | ISO week number to view, 1–53 (defaults to current week) |
+| `type` | No | Ranking method — `wins` (default), `score`, `ffa_wins` or `team_wins` |
+
+### Personal Win Tracking
+
+#### `/player register`
+
+Register a Player ID so the bot announces that player's FFA, ranked and team wins in the current channel and mentions them in win messages.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `player_id` | Yes | OpenFront Player ID, or the full profile URL from the in-game account modal |
+| `user` | No | :shield: Register another Discord user instead of yourself |
+
+#### `/player unregister`
+
+Stop win announcements.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `user` | No | :shield: Remove another Discord user's registration instead of your own |
+
+#### `/player status`
+
+Check your registration status.
+
+#### `/player list` :shield:
+
+List all players registered in this server (username, Player ID, Discord user).
+
+#### `/in-game-name remove-my-name`
+
+Remove all your own legacy in-game name mappings.
+
+### Server Setup
+
+All `/setup` subcommands require :shield: **Manage Server**.
+
+#### `/setup wins`
+
+Add a clan tag to win announcements in the current channel.
 
 | Option | Required | Description |
 |--------|----------|-------------|
 | `tag` | Yes | The clan tag to track |
 
-### `/setup disable`
+#### `/setup remove`
 
-Disable clan win announcements for this server. Requires **Manage Server** permission.
-
-### `/setup status`
-
-Show the current win announcement configuration. Requires **Manage Server** permission.
-
-### `/in-game-name set`
-
-Map an in-game username to a Discord user so they get mentioned in clan win announcements. Requires **Manage Server** permission.
+Remove a clan tag from win announcements.
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `user` | Yes | The Discord user to mention |
-| `username` | Yes | The in-game username (clan tags are stripped automatically) |
+| `tag` | Yes | The clan tag to remove |
 
-### `/in-game-name remove`
+#### `/setup ffa-channel`
 
-Remove a username-to-Discord mapping. Requires **Manage Server** permission.
+Use the current channel for non-ranked FFA win announcements.
+
+#### `/setup ranked-channel`
+
+Use the current channel for ranked win announcements.
+
+#### `/setup disable`
+
+Disable win announcements for this server.
+
+#### `/setup status`
+
+Show the current win announcement configuration.
+
+#### `/in-game-name remove` :shield:
+
+Remove a legacy username-to-Discord mapping.
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `username` | Yes | The in-game username to unmap |
+| `username` | Yes | The in-game username to unmap (clan tags are stripped automatically) |
 
-### `/in-game-name list`
+#### `/in-game-name list` :shield:
 
-Show all username mappings for this server. Requires **Manage Server** permission.
+Show all legacy username mappings for this server.
 
-### `/scan-wins` :star:
+### Bot Owner
 
-Backfill player stats from historical wins. Requires **Manage Server** permission.
+These commands can only be used by the Discord user set in `OWNER_DISCORD_ID`.
+
+#### `/trigger-wins`
+
+Manually run the FFA or clan wins check from a date until now.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `type` | Yes | Which check to run (`ffa` or `clan`) |
+| `start_date` | Yes | Start date in YYYY-MM-DD format |
+| `clan` | No | Limit the clan wins check to a single clan tag |
+
+#### `/scan-wins`
+
+Backfill player stats from historical wins.
 
 | Option | Required | Description |
 |--------|----------|-------------|
 | `type` | Yes | Which stats to collect (`clan` or `players`) |
 | `start_date` | Yes | Start date in YYYY-MM-DD format |
+
+#### Delete Game Record (message context menu)
+
+Right-click a win announcement → **Apps** → **Delete Game Record** to delete the message and its recorded win.
+
+### Utility
+
+#### `/ping`
+
+Check if the bot is online.
+
+#### `/help`
+
+List all available commands.
+
+### Deprecated
+
+- `/ffa register|unregister|status` — use `/player` instead.
+- `/in-game-name set` — use `/player register` instead.
 
 ## Prerequisites
 
@@ -133,23 +203,32 @@ Backfill player stats from historical wins. Requires **Manage Server** permissio
    wrangler secret put DISCORD_TOKEN
    wrangler secret put DISCORD_PUBLIC_KEY
    wrangler secret put DISCORD_CLIENT_ID
+   wrangler secret put DISCORD_SKU_ID
+   wrangler secret put OWNER_DISCORD_ID
    ```
+
+   Optionally, set `OPENFRONT_USER_AGENT` and `OPENFRONT_CUSTOM_HEADER_VALUE` to send custom headers to the OpenFront API.
 
 3. For local development, copy `.dev.vars.example` to `.dev.vars` and fill in the values.
 
-4. Deploy the bot:
+4. Create the KV namespace, D1 database and queues referenced in `wrangler.toml`, then apply the database migrations:
+   ```bash
+   wrangler d1 migrations apply openfront-bot-db --remote
+   ```
+
+5. Deploy the bot:
    ```bash
    npm run deploy
    ```
 
-5. Register slash commands with Discord:
+6. Register slash commands with Discord:
    ```bash
    export DISCORD_TOKEN=your_token
    export DISCORD_CLIENT_ID=your_client_id
    npm run deploy-commands
    ```
 
-6. In the Discord Developer Portal, set the **Interactions Endpoint URL** to your Worker URL.
+7. In the Discord Developer Portal, set the **Interactions Endpoint URL** to your Worker URL.
 
 ## Development
 
@@ -187,16 +266,21 @@ The bot runs as a CloudFlare Worker and handles Discord interactions via HTTP (n
 3. Interaction is routed by type (commands, buttons, etc.)
 4. Handler executes and returns API response JSON
 
+Win announcements run in the background: cron triggers every 5 minutes enqueue clan and FFA win checks, which are processed by CloudFlare Queue consumers. Guild configuration and player registrations are stored in D1; posted-game tracking lives in KV.
+
 ### Project Structure
 
 ```
 src/
 ├── worker.ts          # Entry point - fetch handler
-├── handlers/          # Interaction routing by type
+├── handlers/          # Interaction routing, cron and queue handlers
 ├── commands/          # Slash command definitions
 ├── messages/          # Message builders (embeds, components)
+├── structures/        # Shared interfaces (commands, messages)
 ├── types/             # TypeScript type definitions
+├── util/              # API clients, D1/KV helpers, formatting
 └── scripts/           # Utility scripts (deploy commands)
+migrations/            # D1 database migrations
 ```
 
 ## License

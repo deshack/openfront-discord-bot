@@ -4,6 +4,7 @@
 DISCORD_TOKEN=
 DISCORD_PUBLIC_KEY=
 DISCORD_CLIENT_ID=
+DISCORD_SKU_ID=
 OWNER_DISCORD_ID=
 
 # Optional: OpenFront API headers (leave empty to disable)
