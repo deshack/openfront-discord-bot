@@ -2,10 +2,19 @@
 
 ## v2.4.5
 
+### New Features
+
+- **Moderators can remove another user's registration** — `/player unregister` now takes an optional `user` option. Users with the Manage Server permission can use it to remove another member's Player ID registration, mirroring `/player register <user>`. Without the option it still removes your own registration.
+
 ### Bug Fixes
 
 - **Win announcements now actually ping players** — Discord doesn't notify users mentioned inside an embed, so win messages only showed mentions without pinging anyone. Clan, FFA and ranked win messages now also mention the participating Discord users in the message content, alongside the embed.
 - **2v2 wins now mention both teammates** — the teammate is resolved through the server's player registrations (by Player ID), so both registered winners are mentioned instead of only the player whose win was processed first.
+
+### Documentation
+
+- **README rewritten to match the current commands** — removed the obsolete `/leaderboard` and `/ffa` docs; added `/player`, `/whois`, `/game-deaths`, the missing `/setup` subcommands, the bot-owner commands and the Delete Game Record context menu; fixed `/rank`'s options and permissions. Setup steps now cover all required secrets, creating the CloudFlare resources and applying D1 migrations.
+- **Documented the `DISCORD_SKU_ID` secret** — it's required for premium checks but was missing from `wrangler.toml`, `.dev.vars.example` and `CLAUDE.md`. `CLAUDE.md` now also lists `OWNER_DISCORD_ID` and the optional OpenFront API header secrets.
 
 ---
 
