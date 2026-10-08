@@ -1,5 +1,6 @@
 import {
   APIActionRowComponent,
+  APIAllowedMentions,
   APIButtonComponent,
   APIEmbed,
 } from "discord-api-types/v10";
@@ -16,6 +17,7 @@ export interface MessageData {
   components?: APIActionRowComponent<APIButtonComponent>[];
   flags?: number;
   attachments?: AttachmentReference[];
+  allowed_mentions?: APIAllowedMentions;
 }
 
 export interface MessageDataWithFiles {

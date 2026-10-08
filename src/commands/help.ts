@@ -49,6 +49,7 @@ const command: CommandHandler = {
                   "`/player register <player_id>` — Register your Player ID (or profile URL) for FFA & team win announcements",
                   "`/player unregister` — Stop win announcements",
                   "`/player status` — Check your registration status",
+                  "`/player mentions <enabled>` — Choose whether you get pinged when your wins are announced",
                   "`/ffa` — *(Deprecated, use `/player` instead)*",
                   "`/in-game-name remove-my-name` — Remove your legacy in-game name link",
                 ].join("\n"),

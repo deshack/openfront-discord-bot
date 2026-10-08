@@ -1,11 +1,14 @@
 import {
+  APIApplicationCommandInteraction,
+  APIApplicationCommandInteractionDataBooleanOption,
   APIApplicationCommandInteractionDataSubcommandOption,
   APIApplicationCommandInteractionDataUserOption,
-  APIApplicationCommandInteraction,
   APIChatInputApplicationCommandInteraction,
   APIInteractionResponse,
   ApplicationCommandOptionType,
   ApplicationIntegrationType,
+  ButtonStyle,
+  ComponentType,
   InteractionContextType,
   InteractionResponseType,
   MessageFlags,
@@ -16,8 +19,10 @@ import { CommandHandler } from "../structures/command";
 import { Env } from "../types/env";
 import { getPlayerPublic } from "../util/api_util";
 import {
+  areMentionsEnabled,
   getPlayerRegistration,
   registerPlayer,
+  setMentionsEnabled,
   setProfileUsername,
   unregisterPlayer,
 } from "../util/db";
@@ -123,8 +128,7 @@ export async function executePlayerCommand(
       };
     }
 
-    const channelId =
-      chatInteraction.channel?.id ?? chatInteraction.channel_id;
+    const channelId = chatInteraction.channel?.id ?? chatInteraction.channel_id;
     if (!channelId) {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
@@ -156,6 +160,10 @@ export async function executePlayerCommand(
       targetDiscordUserId = String(userOption.value);
     }
 
+    const isNewRegistration =
+      targetDiscordUserId === discordUserId &&
+      (await getPlayerRegistration(env.DB, guildId, discordUserId)) === null;
+
     await registerPlayer(
       env.DB,
       guildId,
@@ -182,10 +190,38 @@ export async function executePlayerCommand(
       );
     }
 
+    const content = `<@${targetDiscordUserId}> has registered for win tracking. Their FFA and team wins will be announced in this channel.`;
+
+    if (!isNewRegistration) {
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: { content },
+      };
+    }
+
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
       data: {
-        content: `<@${targetDiscordUserId}> has registered for win tracking. Their FFA and team wins will be announced in this channel.`,
+        content: `${content}\n\n<@${targetDiscordUserId}>, do you want to be pinged when your wins are announced? You can change this anytime with \`/player mentions\`.`,
+        components: [
+          {
+            type: ComponentType.ActionRow,
+            components: [
+              {
+                type: ComponentType.Button,
+                style: ButtonStyle.Success,
+                label: "Ping me",
+                custom_id: `mentions|on|${targetDiscordUserId}`,
+              },
+              {
+                type: ComponentType.Button,
+                style: ButtonStyle.Secondary,
+                label: "Don't ping me",
+                custom_id: `mentions|off|${targetDiscordUserId}`,
+              },
+            ],
+          },
+        ],
       },
     };
   }
@@ -248,7 +284,8 @@ export async function executePlayerCommand(
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
       data: {
-        content: "Win tracking disabled. Your wins will no longer be announced.",
+        content:
+          "Win tracking disabled. Your wins will no longer be announced.",
         flags: MessageFlags.Ephemeral,
       },
     };
@@ -272,10 +309,52 @@ export async function executePlayerCommand(
       };
     }
 
+    const mentionsEnabled = await areMentionsEnabled(
+      env.DB,
+      guildId,
+      discordUserId,
+    );
+    const mentionsLine = mentionsEnabled
+      ? "You will be pinged when your wins are announced."
+      : "You will not be pinged when your wins are announced.";
+
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
       data: {
-        content: `Win tracking is enabled for Player ID \`${registration.playerId}\`. Wins will be announced in <#${registration.channelId}>.`,
+        content: `Win tracking is enabled for Player ID \`${registration.playerId}\`. Wins will be announced in <#${registration.channelId}>.\n${mentionsLine} Use \`/player mentions\` to change this.`,
+        flags: MessageFlags.Ephemeral,
+      },
+    };
+  }
+
+  if (subcommand.name === "mentions") {
+    const enabledOption = subcommand.options?.find(
+      (o) => o.name === "enabled",
+    ) as APIApplicationCommandInteractionDataBooleanOption | undefined;
+
+    if (!enabledOption) {
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: "The `enabled` option is required",
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
+
+    await setMentionsEnabled(
+      env.DB,
+      guildId,
+      discordUserId,
+      enabledOption.value,
+    );
+
+    return {
+      type: InteractionResponseType.ChannelMessageWithSource,
+      data: {
+        content: enabledOption.value
+          ? "You will be pinged when your wins are announced."
+          : "You will no longer be pinged when your wins are announced. Your wins will still be posted.",
         flags: MessageFlags.Ephemeral,
       },
     };
@@ -286,8 +365,7 @@ export async function executePlayerCommand(
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: {
-          content:
-            "You need the Manage Server permission to use this command.",
+          content: "You need the Manage Server permission to use this command.",
           flags: MessageFlags.Ephemeral,
         },
       };
@@ -319,8 +397,7 @@ const command: CommandHandler = {
       {
         type: ApplicationCommandOptionType.Subcommand,
         name: "register",
-        description:
-          "Register your Player ID for win tracking in this channel",
+        description: "Register your Player ID for win tracking in this channel",
         options: [
           {
             type: ApplicationCommandOptionType.String,
@@ -359,9 +436,22 @@ const command: CommandHandler = {
       },
       {
         type: ApplicationCommandOptionType.Subcommand,
-        name: "list",
+        name: "mentions",
         description:
-          "List all players registered in this server (admin only)",
+          "Choose whether you get pinged when your wins are announced",
+        options: [
+          {
+            type: ApplicationCommandOptionType.Boolean,
+            name: "enabled",
+            description: "Ping me in win announcements",
+            required: true,
+          },
+        ],
+      },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: "list",
+        description: "List all players registered in this server (admin only)",
       },
     ],
   },

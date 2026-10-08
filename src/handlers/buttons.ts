@@ -7,6 +7,7 @@ import { getPlayerListMessage } from "../messages/player_list";
 import { getRankMessage } from "../messages/rank";
 import { CommandContext } from "../structures/command";
 import { Env } from "../types/env";
+import { setMentionsEnabled } from "../util/db";
 import {
   LeaderboardPeriod,
   MonthContext,
@@ -42,6 +43,50 @@ export async function handleButton(
     };
   }
 
+  if (customId.startsWith("mentions|")) {
+    const guildId = interaction.guild_id;
+    if (!guildId) {
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: "This feature can only be used in a server.",
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
+
+    // Format: mentions|on|discordUserId or mentions|off|discordUserId
+    const [, choice, targetDiscordUserId] = customId.split("|");
+    const clickerId = interaction.member?.user.id ?? interaction.user?.id;
+
+    if (clickerId !== targetDiscordUserId) {
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: `Only <@${targetDiscordUserId}> can choose this. Use \`/player mentions\` to set your own preference.`,
+          flags: MessageFlags.Ephemeral,
+        },
+      };
+    }
+
+    const enabled = choice === "on";
+
+    await setMentionsEnabled(env.DB, guildId, targetDiscordUserId, enabled);
+
+    const [registeredLine] = interaction.message.content.split("\n\n");
+    const choiceLine = enabled
+      ? "-# You will be pinged when your wins are announced. Change this anytime with `/player mentions`."
+      : "-# You will not be pinged when your wins are announced. Change this anytime with `/player mentions`.";
+
+    return {
+      type: InteractionResponseType.UpdateMessage,
+      data: {
+        content: `${registeredLine}\n${choiceLine}`,
+        components: [],
+      },
+    };
+  }
+
   if (customId.startsWith("rank-refresh|")) {
     const guildId = interaction.guild_id;
     if (!guildId) {
@@ -69,8 +114,8 @@ export async function handleButton(
       ? parseInt(parts[6]) || 0
       : parseInt(parts[5]) || 0;
     const rankingType = isNewRefreshFormat
-      ? ((parts[7] as RankingType) || "wins")
-      : ((parts[6] as RankingType) || "wins");
+      ? (parts[7] as RankingType) || "wins"
+      : (parts[6] as RankingType) || "wins";
 
     const now = Date.now();
     const cooldownMs = 30 * 1000;
@@ -151,8 +196,8 @@ export async function handleButton(
       ? parseInt(parts[5]) || 0
       : parseInt(parts[4]) || 0;
     const rankingType = isNewPaginationFormat
-      ? ((parts[6] as RankingType) || "wins")
-      : ((parts[5] as RankingType) || "wins");
+      ? (parts[6] as RankingType) || "wins"
+      : (parts[5] as RankingType) || "wins";
 
     let monthContext: MonthContext | undefined;
     if (period === "monthly" && year > 0 && month > 0) {

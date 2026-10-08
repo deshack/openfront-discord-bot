@@ -22,6 +22,7 @@ export function getClanWinMessage(
   publicIdMappings?: Map<string, string>,
   usernameMappings?: Map<string, string>,
   gitCommit?: string,
+  mentionOptOuts?: Set<string>,
 ): MessageData {
   const gameStart = new Date(session.gameStart);
 
@@ -40,7 +41,8 @@ export function getClanWinMessage(
     ...new Set(
       resolvedPlayers
         .map(({ discordUserId }) => discordUserId)
-        .filter((id): id is string => !!id),
+        .filter((id): id is string => !!id)
+        .filter((id) => !mentionOptOuts?.has(id)),
     ),
   ].map((id) => `<@${id}>`);
 

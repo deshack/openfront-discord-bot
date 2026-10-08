@@ -20,6 +20,7 @@ export interface FFAWinData {
   gameInfo?: GameInfo;
   gitCommit?: string;
   publicIdMappings?: Map<string, string>;
+  mentionOptOuts?: Set<string>;
 }
 
 export function getFFAWinMessage(data: FFAWinData): MessageData {
@@ -30,11 +31,15 @@ export function getFFAWinMessage(data: FFAWinData): MessageData {
     gameInfo,
     gitCommit,
     publicIdMappings,
+    mentionOptOuts,
   } = data;
 
   if (!gameInfo) {
     return {
       content: `<@${discordUserId}> ${gameUrl(gameId)}`,
+      ...(mentionOptOuts?.has(discordUserId) && {
+        allowed_mentions: { parse: [] },
+      }),
     };
   }
 
@@ -73,6 +78,9 @@ export function getFFAWinMessage(data: FFAWinData): MessageData {
         .map(discordUserIdFor)
         .filter((id): id is string => id !== undefined)
     : [discordUserId];
+  const pingedUserIds = [...new Set(mentionedUserIds)].filter(
+    (id) => !mentionOptOuts?.has(id),
+  );
 
   const desc = is2v2
     ? get2v2Description(
@@ -95,7 +103,9 @@ export function getFFAWinMessage(data: FFAWinData): MessageData {
       );
 
   return {
-    content: [...new Set(mentionedUserIds)].map((id) => `<@${id}>`).join(" "),
+    ...(pingedUserIds.length > 0 && {
+      content: pingedUserIds.map((id) => `<@${id}>`).join(" "),
+    }),
     embeds: [
       {
         title,

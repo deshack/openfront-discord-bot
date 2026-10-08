@@ -20,11 +20,12 @@ import {
   deleteGuildChannelConfig,
   deleteGuildConfig,
   getGuildConfigsByClanTag,
+  getMentionOptOuts,
   getPlayerRegistrationsByPlayerIds,
-  listGuildChannelConfigs,
-  listGuildConfigsByGuild,
   getRegistrationsByPlayerId,
   getUsernameMappingsByUsernames,
+  listGuildChannelConfigs,
+  listGuildConfigsByGuild,
   removeRegistrationsByPlayerId,
   stripClanTag,
   unregisterPlayer,
@@ -137,7 +138,9 @@ async function processClanTag(
         const gameInfoData = gameInfoCache.get(win.gameId);
 
         if (!gameInfoData) {
-          console.error(`Game info unavailable for game ${win.gameId}, skipping.`);
+          console.error(
+            `Game info unavailable for game ${win.gameId}, skipping.`,
+          );
           continue;
         }
 
@@ -167,6 +170,13 @@ async function processClanTag(
           clanPlayers.map((p) => stripClanTag(p.username)),
         );
 
+        const mentionOptOuts = await getMentionOptOuts(env.DB, guildId, [
+          ...new Set([
+            ...publicIdMappings.values(),
+            ...usernameMappings.values(),
+          ]),
+        ]);
+
         const message = getClanWinMessage(
           win,
           clanPlayers,
@@ -175,6 +185,7 @@ async function processClanTag(
           publicIdMappings,
           usernameMappings,
           gameInfoData.data.gitCommit,
+          mentionOptOuts,
         );
         const result = await sendChannelMessage(
           env.DISCORD_TOKEN,
@@ -320,7 +331,9 @@ async function processPlayer(
         const gameInfoData = gameInfoCache.get(win.gameId);
 
         if (!gameInfoData) {
-          console.error(`Game info unavailable for game ${win.gameId}, skipping.`);
+          console.error(
+            `Game info unavailable for game ${win.gameId}, skipping.`,
+          );
           continue;
         }
 
@@ -343,6 +356,9 @@ async function processPlayer(
           guildId,
           winningPublicIds,
         );
+        const mentionOptOuts = await getMentionOptOuts(env.DB, guildId, [
+          ...new Set([discordUserId, ...publicIdMappings.values()]),
+        ]);
 
         const discordMessage = getFFAWinMessage({
           discordUserId,
@@ -351,6 +367,7 @@ async function processPlayer(
           gameInfo,
           gitCommit: gameInfoData.data.gitCommit,
           publicIdMappings,
+          mentionOptOuts,
         });
         const result = await sendChannelMessage(
           env.DISCORD_TOKEN,
@@ -454,7 +471,12 @@ export async function handleScanWinsQueue(
     try {
       const { guildId, channelId, clanTag, startDate, endDate } = message.body;
 
-      const sessionsData = await getClanSessions(clanTag, startDate, endDate, env);
+      const sessionsData = await getClanSessions(
+        clanTag,
+        startDate,
+        endDate,
+        env,
+      );
 
       if (!sessionsData) {
         console.debug(
@@ -472,7 +494,13 @@ export async function handleScanWinsQueue(
         continue;
       }
 
-      const jobId = await createScanJob(env.DB, guildId, channelId, clanTag, "clan");
+      const jobId = await createScanJob(
+        env.DB,
+        guildId,
+        channelId,
+        clanTag,
+        "clan",
+      );
 
       const statements = wins.map((win) =>
         createScanJobClanSessionStatement(env.DB, jobId, win.gameId, win.score),

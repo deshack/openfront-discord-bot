@@ -61,9 +61,7 @@ export async function deleteGuildClanTag(
   clanTag: string,
 ): Promise<boolean> {
   const result = await db
-    .prepare(
-      "DELETE FROM guild_configs WHERE guild_id = ? AND clan_tag = ?",
-    )
+    .prepare("DELETE FROM guild_configs WHERE guild_id = ? AND clan_tag = ?")
     .bind(guildId, clanTag)
     .run();
 
@@ -91,7 +89,9 @@ export async function getGuildConfigsByClanTag(
   clanTag: string,
 ): Promise<{ guildId: string; config: GuildConfig }[]> {
   const { results } = await db
-    .prepare("SELECT guild_id, clan_tag, channel_id FROM guild_configs WHERE clan_tag = ?")
+    .prepare(
+      "SELECT guild_id, clan_tag, channel_id FROM guild_configs WHERE clan_tag = ?",
+    )
     .bind(clanTag)
     .all<GuildConfigRow>();
 
@@ -504,6 +504,56 @@ export async function listAllPlayerRegistrations(
   }));
 }
 
+// ========== Mention Preferences ==========
+
+export async function setMentionsEnabled(
+  db: D1Database,
+  guildId: string,
+  discordUserId: string,
+  enabled: boolean,
+): Promise<void> {
+  const query = enabled
+    ? "DELETE FROM mention_opt_outs WHERE guild_id = ? AND discord_user_id = ?"
+    : "INSERT OR IGNORE INTO mention_opt_outs (guild_id, discord_user_id) VALUES (?, ?)";
+
+  await db.prepare(query).bind(guildId, discordUserId).run();
+}
+
+export async function areMentionsEnabled(
+  db: D1Database,
+  guildId: string,
+  discordUserId: string,
+): Promise<boolean> {
+  const row = await db
+    .prepare(
+      "SELECT 1 FROM mention_opt_outs WHERE guild_id = ? AND discord_user_id = ?",
+    )
+    .bind(guildId, discordUserId)
+    .first();
+
+  return row === null;
+}
+
+export async function getMentionOptOuts(
+  db: D1Database,
+  guildId: string,
+  discordUserIds: string[],
+): Promise<Set<string>> {
+  if (discordUserIds.length === 0) {
+    return new Set();
+  }
+
+  const placeholders = discordUserIds.map(() => "?").join(", ");
+  const { results } = await db
+    .prepare(
+      `SELECT discord_user_id FROM mention_opt_outs WHERE guild_id = ? AND discord_user_id IN (${placeholders})`,
+    )
+    .bind(guildId, ...discordUserIds)
+    .all<{ discord_user_id: string }>();
+
+  return new Set(results.map((row) => row.discord_user_id));
+}
+
 // ========== Scan Jobs ==========
 
 export type ScanJobStatus = "pending" | "processing" | "completed" | "failed";
@@ -735,8 +785,8 @@ export async function countPendingClanSessionJobs(
       `SELECT COUNT(*) as num FROM scan_job_clan_sessions WHERE scan_job_id = ? and status IN ('pending', 'processing')`,
     )
     .bind(jobId)
-    .first<{num: number}>()
-    .then(result => result?.num ?? 0);
+    .first<{ num: number }>()
+    .then((result) => result?.num ?? 0);
 }
 export async function completeScanJob(
   db: D1Database,
@@ -807,7 +857,9 @@ export function createScanJobPlayerStatement(
   playerId: string,
 ): D1PreparedStatement {
   return db
-    .prepare(`INSERT INTO scan_job_players (scan_job_id, player_id) VALUES (?, ?)`)
+    .prepare(
+      `INSERT INTO scan_job_players (scan_job_id, player_id) VALUES (?, ?)`,
+    )
     .bind(scanJobId, playerId);
 }
 
