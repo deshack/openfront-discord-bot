@@ -68,7 +68,7 @@ View the clan leaderboard rankings for a given time period.
 
 #### `/player register`
 
-Register a Player ID so the bot announces that player's FFA, ranked and team wins in the current channel and mentions them in win messages.
+Register a Player ID so the bot announces that player's FFA, ranked and team wins in the current channel and mentions them in win messages. When you register yourself for the first time, the bot asks whether you want to be pinged in win announcements (you can change this later with `/player mentions`).
 
 | Option | Required | Description |
 |--------|----------|-------------|
@@ -85,7 +85,15 @@ Stop win announcements.
 
 #### `/player status`
 
-Check your registration status.
+Check your registration status and whether you get pinged in win announcements.
+
+#### `/player mentions`
+
+Choose whether you get pinged when your wins are announced. Your wins are still posted either way; opting out only removes the notification.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `enabled` | Yes | `true` to be pinged in win announcements, `false` to opt out |
 
 #### `/player list` :shield:
 

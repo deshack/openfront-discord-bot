@@ -1,5 +1,18 @@
 # Changelog
 
+## v2.5.0
+
+### New Features
+
+- **Opt out of win announcement pings** — some players found the win mentions added in v2.4.5 too noisy. `/player mentions <enabled>` now lets each player choose whether they get pinged when their wins are announced; their wins are still posted, and the embed still shows who won. `/player status` shows the current setting. Applies to clan, FFA, ranked and 2v2 win messages, including players matched through legacy username mappings.
+- **Ping preference asked at registration** — the first time a player registers themselves with `/player register`, the confirmation message asks whether they want to be pinged, with *Ping me* / *Don't ping me* buttons that only that player can use. Ignoring the question keeps pings enabled.
+
+### Upgrade Notes
+
+- Apply the new D1 migration (`npm run migrate`), which creates the `mention_opt_outs` table, and re-register slash commands (`npm run deploy-commands`) for `/player mentions`.
+
+---
+
 ## v2.4.5
 
 ### New Features
