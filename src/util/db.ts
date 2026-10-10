@@ -554,6 +554,51 @@ export async function getMentionOptOuts(
   return new Set(results.map((row) => row.discord_user_id));
 }
 
+export async function setGuildMentionsEnabled(
+  db: D1Database,
+  guildId: string,
+  enabled: boolean,
+): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO guild_settings (guild_id, mentions_enabled, created_at, updated_at)
+       VALUES (?, ?, unixepoch(), unixepoch())
+       ON CONFLICT(guild_id) DO UPDATE SET
+         mentions_enabled = excluded.mentions_enabled,
+         updated_at = unixepoch()`,
+    )
+    .bind(guildId, enabled ? 1 : 0)
+    .run();
+}
+
+export async function areGuildMentionsEnabled(
+  db: D1Database,
+  guildId: string,
+): Promise<boolean> {
+  const row = await db
+    .prepare("SELECT mentions_enabled FROM guild_settings WHERE guild_id = ?")
+    .bind(guildId)
+    .first<{ mentions_enabled: number }>();
+
+  return row === null || row.mentions_enabled === 1;
+}
+
+/**
+ * Returns the subset of the given users who must not be pinged in this guild:
+ * everyone when the server disabled mentions, otherwise the users who opted out.
+ */
+export async function getUnpingableUserIds(
+  db: D1Database,
+  guildId: string,
+  discordUserIds: string[],
+): Promise<Set<string>> {
+  if (!(await areGuildMentionsEnabled(db, guildId))) {
+    return new Set(discordUserIds);
+  }
+
+  return getMentionOptOuts(db, guildId, discordUserIds);
+}
+
 // ========== Scan Jobs ==========
 
 export type ScanJobStatus = "pending" | "processing" | "completed" | "failed";

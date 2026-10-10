@@ -19,6 +19,7 @@ import { CommandHandler } from "../structures/command";
 import { Env } from "../types/env";
 import { getPlayerPublic } from "../util/api_util";
 import {
+  areGuildMentionsEnabled,
   areMentionsEnabled,
   getPlayerRegistration,
   registerPlayer,
@@ -192,7 +193,10 @@ export async function executePlayerCommand(
 
     const content = `<@${targetDiscordUserId}> has registered for win tracking. Their FFA and team wins will be announced in this channel.`;
 
-    if (!isNewRegistration) {
+    if (
+      !isNewRegistration ||
+      !(await areGuildMentionsEnabled(env.DB, guildId))
+    ) {
       return {
         type: InteractionResponseType.ChannelMessageWithSource,
         data: { content },
@@ -314,14 +318,18 @@ export async function executePlayerCommand(
       guildId,
       discordUserId,
     );
+    const guildMentionsEnabled = await areGuildMentionsEnabled(env.DB, guildId);
     const mentionsLine = mentionsEnabled
       ? "You will be pinged when your wins are announced."
       : "You will not be pinged when your wins are announced.";
+    const guildMentionsLine = guildMentionsEnabled
+      ? ""
+      : "\n-# Pings are currently disabled for everyone in this server by its admins.";
 
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
       data: {
-        content: `Win tracking is enabled for Player ID \`${registration.playerId}\`. Wins will be announced in <#${registration.channelId}>.\n${mentionsLine} Use \`/player mentions\` to change this.`,
+        content: `Win tracking is enabled for Player ID \`${registration.playerId}\`. Wins will be announced in <#${registration.channelId}>.\n${mentionsLine} Use \`/player mentions\` to change this.${guildMentionsLine}`,
         flags: MessageFlags.Ephemeral,
       },
     };
@@ -349,12 +357,18 @@ export async function executePlayerCommand(
       enabledOption.value,
     );
 
+    const guildMentionsEnabled = await areGuildMentionsEnabled(env.DB, guildId);
+    const confirmation = enabledOption.value
+      ? "You will be pinged when your wins are announced."
+      : "You will no longer be pinged when your wins are announced. Your wins will still be posted.";
+    const guildMentionsLine = guildMentionsEnabled
+      ? ""
+      : "\n-# Pings are currently disabled for everyone in this server by its admins, so you won't be pinged until they turn them back on.";
+
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
       data: {
-        content: enabledOption.value
-          ? "You will be pinged when your wins are announced."
-          : "You will no longer be pinged when your wins are announced. Your wins will still be posted.",
+        content: `${confirmation}${guildMentionsLine}`,
         flags: MessageFlags.Ephemeral,
       },
     };

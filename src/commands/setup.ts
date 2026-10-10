@@ -1,4 +1,5 @@
 import {
+  APIApplicationCommandInteractionDataBooleanOption,
   APIApplicationCommandInteractionDataSubcommandOption,
   APIChatInputApplicationCommandInteraction,
   ApplicationCommandOptionType,
@@ -10,13 +11,15 @@ import {
 } from "discord-api-types/v10";
 import { CommandHandler } from "../structures/command";
 import {
+  areGuildMentionsEnabled,
+  deleteGuildChannelConfigs,
   deleteGuildClanTag,
   deleteGuildConfig,
-  deleteGuildChannelConfigs,
   listGuildChannelConfigs,
   listGuildConfigsByGuild,
   setGuildChannelConfig,
   setGuildConfig,
+  setGuildMentionsEnabled,
 } from "../util/db";
 
 const command: CommandHandler = {
@@ -63,6 +66,20 @@ const command: CommandHandler = {
         type: ApplicationCommandOptionType.Subcommand,
         name: "ranked-channel",
         description: "Set this channel for ranked win announcements",
+      },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: "mentions",
+        description: "Enable or disable pinging players in win announcements",
+        options: [
+          {
+            type: ApplicationCommandOptionType.Boolean,
+            name: "enabled",
+            description:
+              "Whether win announcements ping players in this server",
+            required: true,
+          },
+        ],
       },
       {
         type: ApplicationCommandOptionType.Subcommand,
@@ -227,6 +244,33 @@ const command: CommandHandler = {
       };
     }
 
+    if (subcommand.name === "mentions") {
+      const enabledOption = subcommand.options?.find(
+        (o) => o.name === "enabled",
+      ) as APIApplicationCommandInteractionDataBooleanOption | undefined;
+
+      if (!enabledOption) {
+        return {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: "The `enabled` option is required",
+            flags: MessageFlags.Ephemeral,
+          },
+        };
+      }
+
+      await setGuildMentionsEnabled(env.DB, guildId, enabledOption.value);
+
+      return {
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content: enabledOption.value
+            ? "Win announcements will ping players again, except those who opted out with `/player mentions`."
+            : "Win announcements will no longer ping anyone in this server. Wins are still posted.",
+        },
+      };
+    }
+
     if (subcommand.name === "disable") {
       await deleteGuildConfig(env.DB, guildId);
       await deleteGuildChannelConfigs(env.DB, guildId);
@@ -242,23 +286,30 @@ const command: CommandHandler = {
     if (subcommand.name === "status") {
       const configs = await listGuildConfigsByGuild(env.DB, guildId);
       const channelConfigs = await listGuildChannelConfigs(env.DB, guildId);
+      const mentionsEnabled = await areGuildMentionsEnabled(env.DB, guildId);
+      const mentionsLine = mentionsEnabled
+        ? "**Player pings:** enabled (players can opt out with `/player mentions`)"
+        : "**Player pings:** disabled for this server";
 
       if (configs.length === 0 && channelConfigs.length === 0) {
         return {
           type: InteractionResponseType.ChannelMessageWithSource,
           data: {
-            content:
-              "No win announcements configured for this server. Use `/setup wins <tag>` to enable.",
+            content: `No win announcements configured for this server. Use \`/setup wins <tag>\` to enable.\n\n${mentionsLine}`,
             flags: MessageFlags.Ephemeral,
           },
         };
       }
 
-      const lines = configs.map((c) => `**[${c.clanTag}]** → <#${c.channelId}>`);
+      const lines = configs.map(
+        (c) => `**[${c.clanTag}]** → <#${c.channelId}>`,
+      );
       let content = `Win announcements are enabled for:\n${lines.join("\n")}`;
 
       const ffaChannelConfig = channelConfigs.find((c) => c.winType === "ffa");
-      const rankedChannelConfig = channelConfigs.find((c) => c.winType === "ranked");
+      const rankedChannelConfig = channelConfigs.find(
+        (c) => c.winType === "ranked",
+      );
 
       if (ffaChannelConfig || rankedChannelConfig) {
         content += "\n\n**Channel overrides:**";
@@ -269,6 +320,8 @@ const command: CommandHandler = {
           content += `\n**Ranked wins channel:** <#${rankedChannelConfig.channelId}>`;
         }
       }
+
+      content += `\n\n${mentionsLine}`;
 
       return {
         type: InteractionResponseType.ChannelMessageWithSource,

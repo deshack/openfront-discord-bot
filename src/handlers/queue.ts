@@ -20,9 +20,9 @@ import {
   deleteGuildChannelConfig,
   deleteGuildConfig,
   getGuildConfigsByClanTag,
-  getMentionOptOuts,
   getPlayerRegistrationsByPlayerIds,
   getRegistrationsByPlayerId,
+  getUnpingableUserIds,
   getUsernameMappingsByUsernames,
   listGuildChannelConfigs,
   listGuildConfigsByGuild,
@@ -170,7 +170,7 @@ async function processClanTag(
           clanPlayers.map((p) => stripClanTag(p.username)),
         );
 
-        const mentionOptOuts = await getMentionOptOuts(env.DB, guildId, [
+        const mentionOptOuts = await getUnpingableUserIds(env.DB, guildId, [
           ...new Set([
             ...publicIdMappings.values(),
             ...usernameMappings.values(),
@@ -356,7 +356,7 @@ async function processPlayer(
           guildId,
           winningPublicIds,
         );
-        const mentionOptOuts = await getMentionOptOuts(env.DB, guildId, [
+        const mentionOptOuts = await getUnpingableUserIds(env.DB, guildId, [
           ...new Set([discordUserId, ...publicIdMappings.values()]),
         ]);
 

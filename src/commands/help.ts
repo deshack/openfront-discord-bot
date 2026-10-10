@@ -61,6 +61,7 @@ const command: CommandHandler = {
                   "`/setup remove <tag>` — Remove a clan tag from win announcements",
                   "`/setup ffa-channel` — Set channel for non-ranked FFA win announcements",
                   "`/setup ranked-channel` — Set channel for ranked win announcements",
+                  "`/setup mentions <enabled>` — Enable or disable pinging players in win announcements",
                   "`/setup disable` — Disable win announcements",
                   "`/setup status` — View current bot configuration",
                   "`/player register <player_id> <user>` — Register another user's Player ID (admin)",
