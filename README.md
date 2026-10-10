@@ -89,7 +89,7 @@ Check your registration status and whether you get pinged in win announcements.
 
 #### `/player mentions`
 
-Choose whether you get pinged when your wins are announced. Your wins are still posted either way; opting out only removes the notification.
+Choose whether you get pinged when your wins are announced. Your wins are still posted either way; opting out only removes the notification. Server admins can also disable pings for everyone with `/setup mentions`.
 
 | Option | Required | Description |
 |--------|----------|-------------|
@@ -130,6 +130,14 @@ Use the current channel for non-ranked FFA win announcements.
 #### `/setup ranked-channel`
 
 Use the current channel for ranked win announcements.
+
+#### `/setup mentions`
+
+Enable or disable pinging players in win announcements for the whole server. Wins are still posted and the embed still shows who won; disabling only removes the notifications. When enabled, each player's own `/player mentions` preference still applies.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `enabled` | Yes | `true` to ping players in win announcements, `false` to never ping anyone in this server |
 
 #### `/setup disable`
 

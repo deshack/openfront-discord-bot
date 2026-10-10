@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.6.0
+
+### New Features
+
+- **Server-wide ping switch** — server admins can now use `/setup mentions <enabled>` to stop win announcements from pinging anyone in their server, regardless of each player's own preference. Wins are still posted and the embed still shows who won. `/setup status` shows the current setting. While pings are disabled, `/player register` no longer asks new players whether they want to be pinged, and `/player status` and `/player mentions` explain that pings are turned off server-wide.
+
+### Upgrade Notes
+
+- Apply the new D1 migration (`npm run migrate`), which creates the `guild_settings` table, and re-register slash commands (`npm run deploy-commands`) for `/setup mentions`.
+
+---
+
 ## v2.5.0
 
 ### New Features
